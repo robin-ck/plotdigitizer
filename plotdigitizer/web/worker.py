@@ -65,11 +65,21 @@ def detect(pdf: str, page: int, bbox, exclude, side) -> dict:
 
 
 def legend(pdf: str, page: int, bbox) -> list:
-    from .. import raster, vector
+    """Legend markers top to bottom, each with a suggested series name read
+    from the legend text (PDF text, OCR fallback) under ``label``."""
+    from .. import legendlabels, raster, vector
     pg, drawings = vector.page_drawings(pdf, page)
     if raster.is_raster_region(pg, bbox):
-        return raster.detect_legend(pg, bbox)
-    return vector.detect_legend(drawings, bbox)
+        ms = raster.detect_legend(pg, bbox)
+    else:
+        ms = vector.detect_legend(drawings, bbox)
+    try:
+        labels = legendlabels.read_legend_labels(pg, bbox, ms)
+    except Exception:  # noqa: BLE001  reading names must never block set-up
+        labels = [{"label": None, "source": None, "confidence": None}] * len(ms)
+    for m, lab in zip(ms, labels):
+        m["label"], m["label_source"], m["label_confidence"] = lab["label"], lab["source"], lab["confidence"]
+    return ms
 
 
 def _save_checks(figdir: Path, res: dict) -> None:
