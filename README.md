@@ -4,9 +4,10 @@ Extracts calibrated data from XY scatter/line plots in scientific PDFs. Every
 value is traceable to figure, panel, series and page.
 
 **Status: LLM-free core.** Positions are measured by deterministic code from the
-PDF drawing commands (vector figures). Everything that needs understanding
-(axis tick values, legend meanings, context) comes from a hand-written
-**Figure Card** (`schemas/figure_card.schema.json`). LLM steps P1–P5 and raster
+PDF drawing commands (vector figures). Tick values are read from the tick
+labels without an LLM (PDF text layer, OCR fallback) and offered as
+suggestions; the hand-written **Figure Card** (`schemas/figure_card.schema.json`)
+stays the authority for tick values, legend meanings and context. LLM steps P1–P5 and raster
 extraction (stage 5) are stubs.
 
 | Stage | Module | State |
@@ -15,6 +16,7 @@ extraction (stage 5) are stubs.
 | 2 selection | `select.py` | by figure number |
 | 3 Figure Card | `figure_card.py` | hand-written, schema-validated |
 | 4 vector | `vector.py` | implemented (spec parser + extensions) |
+| tick values | `ticklabels.py` | PDF text + OCR fallback, suggestions only |
 | 5 raster | `raster.py` | stub |
 | 6 validation | `validate.py` | checks + comparison PNG |
 | 7 WebPlotDigitizer | `wpd.py` | export + re-import with diff log (format unverified) |
@@ -28,6 +30,7 @@ plotdigitizer list-figures paper.pdf
 plotdigitizer digitize paper.pdf --card fig2_card.json --out out
 plotdigitizer reimport out/Key2008/fig2/corrected_wpd.json out/Key2008/fig2
 plotdigitizer collect out
+plotdigitizer ticks paper.pdf --page 6 --bbox 40,37,271,265   # suggest tick values
 ```
 
 Output per figure in `out/<citekey>/fig<N>/`: `points.csv`, `points_sheet.csv`
@@ -53,6 +56,26 @@ environment variables (`PD_DATA_ROOT`, `PD_MAX_UPLOAD_MB`, `PD_MAX_PAGES`,
 a public server: see `docs/deployment.md`. Design:
 `docs/superpowers/specs/2026-11-18-web-review-ui-design.md`; API:
 `openspec/changes/add-web-interface/api.md`.
+
+## Tick values from the labels
+
+`plotdigitizer ticks` and the web set-up screen read the numbers printed next to
+the detected ticks:
+
+1. **PDF text layer** (exact): characters with their boxes; `10` with a smaller
+   raised number is read as a power of ten; Unicode minus, decimal comma and
+   thousands separators are handled.
+2. **OCR fallback** when the text layer has nothing usable (labels converted to
+   outlines, embedded images): one small window per tick, read by Tesseract.
+   Needs `pip install -e .[ocr]` plus the `tesseract` binary
+   (`apt install tesseract-ocr`); without it the step is skipped.
+
+Each label goes to the nearest major tick. The values must then be evenly
+spaced on a linear or log axis; ticks without a label are filled in from that
+fit, and a single OCR misread that breaks the pattern is replaced. OCR results
+are always marked "check every value". The web form fills empty tick fields
+with the suggestion and sets log scale and inverted; typed values are never
+overwritten. Raster figures still need stage 5 for the tick and point positions.
 
 ## Figure Card essentials (vector)
 

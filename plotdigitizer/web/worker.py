@@ -48,9 +48,19 @@ def render_page(pdf: str, page: int, zoom: int, out: str) -> dict:
 
 
 def detect(pdf: str, page: int, bbox, exclude, side) -> dict:
-    from .. import vector
-    _, drawings = vector.page_drawings(pdf, page)
-    return vector.detect_ticks(drawings, bbox, exclude=exclude or (), side=side)
+    """Tick positions (drawing commands) plus suggested tick values (PDF text,
+    OCR fallback) under ``labels`` on each axis."""
+    from .. import ticklabels, vector
+    pg, drawings = vector.page_drawings(pdf, page)
+    det = vector.detect_ticks(drawings, bbox, exclude=exclude or (), side=side)
+    try:
+        labels = ticklabels.read_tick_labels(pg, bbox, det, exclude=exclude or ())
+    except Exception as e:  # noqa: BLE001  reading labels must never block set-up
+        labels = {o: {"error": f"tick labels could not be read ({e.__class__.__name__})", "suggested": None}
+                  for o in ("x", "y")}
+    for o in ("x", "y"):
+        det[o]["labels"] = labels.get(o)
+    return det
 
 
 def legend(pdf: str, page: int, bbox) -> list:
