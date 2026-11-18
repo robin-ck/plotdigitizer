@@ -15,9 +15,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-raster = ["opencv-python-headless"]
+raster = ["opencv-python-headless"]   # stage 5; the web interface needs it for raster figures
 ocr = ["pytesseract", "pillow"]   # also needs the tesseract binary (apt install tesseract-ocr)
-web = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9"]
+web = ["opencv-python-headless", "fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9"]
 test = ["pytest", "httpx"]
 
 [project.scripts]

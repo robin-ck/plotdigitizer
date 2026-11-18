@@ -178,6 +178,12 @@
           "type": "number",
           "exclusiveMinimum": 0,
           "description": "PDF coordinate grid in pt (e.g. 0.66). Sets the reading uncertainty (+- half a step) when automatic detection finds no grid."
+        },
+        "match_threshold": {
+          "type": "number",
+          "minimum": 0.3,
+          "maximum": 0.99,
+          "description": "Raster only: minimum template match score for a marker (default 0.6)."
         }
       }
     },
@@ -242,6 +248,12 @@
           "type": "number",
           "exclusiveMinimum": 0,
           "description": "PDF coordinate grid in pt (e.g. 0.66). Sets the reading uncertainty (+- half a step) when automatic detection finds no grid."
+        },
+        "match_threshold": {
+          "type": "number",
+          "minimum": 0.3,
+          "maximum": 0.99,
+          "description": "Raster only: minimum template match score for a marker (default 0.6)."
         }
       }
     }
@@ -288,8 +300,10 @@
         "kind": {
           "enum": [
             "vector",
-            "raster"
-          ]
+            "raster",
+            "auto"
+          ],
+          "description": "auto: raster for panels covered by an embedded image, vector otherwise."
         },
         "bbox": {
           "$ref": "#/$defs/bbox"

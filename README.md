@@ -7,8 +7,9 @@ value is traceable to figure, panel, series and page.
 PDF drawing commands (vector figures). Tick values are read from the tick
 labels without an LLM (PDF text layer, OCR fallback) and offered as
 suggestions; the hand-written **Figure Card** (`schemas/figure_card.schema.json`)
-stays the authority for tick values, legend meanings and context. LLM steps P1–P5 and raster
-extraction (stage 5) are stubs.
+stays the authority for tick values, legend meanings and context. Raster
+figures (embedded images) go through stage 5 (template matching). LLM steps
+P1–P5 are stubs.
 
 | Stage | Module | State |
 | --- | --- | --- |
@@ -17,7 +18,7 @@ extraction (stage 5) are stubs.
 | 3 Figure Card | `figure_card.py` | hand-written, schema-validated |
 | 4 vector | `vector.py` | implemented (spec parser + extensions) |
 | tick values | `ticklabels.py` | PDF text + OCR fallback, suggestions only |
-| 5 raster | `raster.py` | stub |
+| 5 raster | `raster.py` | implemented (pixels -> PDF pt, template matching) |
 | 6 validation | `validate.py` | checks + comparison PNG |
 | 7 WebPlotDigitizer | `wpd.py` | export + re-import with diff log (format unverified) |
 | export | `export.py` | long-format CSV, sheet variant, collect |
@@ -75,7 +76,30 @@ spaced on a linear or log axis; ticks without a label are filled in from that
 fit, and a single OCR misread that breaks the pattern is replaced. OCR results
 are always marked "check every value". The web form fills empty tick fields
 with the suggestion and sets log scale and inverted; typed values are never
-overwritten. Raster figures still need stage 5 for the tick and point positions.
+overwritten. Labels are looked for on both frame lines (ticks are often
+mirrored on all four sides).
+
+## Raster figures (stage 5)
+
+Needs `pip install -e .[raster]` (OpenCV). `figure.kind`: `raster`, or `auto`
+(raster for each panel covered by an embedded image; the web interface always
+uses `auto`).
+
+* The panel is rendered at the native resolution of the embedded image and all
+  results are converted to PDF points, so calibration, checks, review and CSV
+  are the same as for vector figures.
+* Axes: long dark lines; ticks: short, thin, isolated strokes attached to them
+  (a tick hidden in a frame corner is added when the spacing puts one there).
+  Vector axes in mixed figures are used when present.
+* Markers: template matching. Templates come from the legend markers (legend
+  box) or are drawn from the card's `marker`/`filled` at the best-fitting size.
+  `confidence` per point from the match score: `gut` >= 0.8, `mittel` >= 0.65,
+  `gering` below (shown as "check: weak match" in the review table).
+  `match_threshold` (default 0.6) per panel/inset.
+* Uncertainty: one image pixel, converted to values.
+* Known limits: markers drawn exactly on top of each other count once; a marker
+  cut by the axis frame can be missed (the `expected_count` check reports it);
+  axis breaks are not handled. Review every raster figure before export.
 
 ## Figure Card essentials (vector)
 
@@ -102,7 +126,7 @@ pytest
 The reference papers (Bastviken 2008, Blees 2014) are not included (copyright);
 see `tests/fixtures/README.md`. With `Bastviken2008.pdf` in place, Fig. 2 is
 extracted with all 418 points matching the reference sheet 1:1 (max deviation
-0.07 umol/L, 0.06 m). Blees (raster) waits for stage 5. Tests use synthetic PDFs: a hand-written content
+0.07 umol/L, 0.06 m). Blees (raster) needs its PDF and a Figure Card; stage 5 is tested on a synthetic PNG figure. Tests use synthetic PDFs: a hand-written content
 stream mimicking journal path topologies (0.66 pt grid, uneven ticks, several
 series per path, fill/stroke pairs, rays) and a matplotlib figure (inset,
 log axis, legends).

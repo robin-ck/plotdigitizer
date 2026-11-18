@@ -303,3 +303,115 @@ def make_mpl_pdf(path: str | Path) -> tuple[Path, dict, dict]:
         ],
     }
     return path, card, exp
+
+
+# --------------------------------------------------------------------------
+# raster PDF (figure embedded as a PNG, journal style)
+# --------------------------------------------------------------------------
+
+def make_raster_pdf(path: str | Path, dpi: int = 200) -> tuple[Path, dict, dict]:
+    """A journal-style figure saved as PNG and embedded in a PDF page.
+
+    Panel a: depth profile (x on top, inverted y), filled circles with a solid
+    line, open circles with a dashed line, filled triangles without a line,
+    legend. Panel b: open squares and filled diamonds, negative x values, no
+    legend (markers come from the card). All four spines, ticks inward.
+    """
+    import io
+
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import pymupdf
+
+    rc = {"xtick.direction": "in", "ytick.direction": "in", "xtick.top": True, "ytick.right": True,
+          "font.size": 8, "axes.linewidth": 0.8}
+    with matplotlib.rc_context(rc):
+        fig = plt.figure(figsize=(7.0, 3.4), dpi=dpi)
+        axa = fig.add_axes([0.08, 0.08, 0.38, 0.76])
+        axb = fig.add_axes([0.58, 0.14, 0.38, 0.76])
+        exp: dict = {"a": {}, "b": {}}
+        d = np.arange(0, 21, 2.0)
+        sa = {
+            "May": dict(x=40 + 6 * d, y=d, marker="o", mfc="k", ls="-", shape="circle", filled=True),
+            "Aug": dict(x=150 - 4 * d, y=d + 1, marker="o", mfc="none", ls="--", shape="circle", filled=False),
+            "Oct": dict(x=np.array([20.0, 60, 100, 140, 180]), y=np.array([3.0, 7, 11, 15, 19]), marker="^",
+                        mfc="k", ls="none", shape="triangle", filled=True),
+        }
+        for lab, v in sa.items():
+            axa.plot(v["x"], v["y"], marker=v["marker"], mfc=v["mfc"], ls=v["ls"], ms=5, color="k", lw=0.7,
+                     label=lab, mew=0.8)
+            exp["a"][lab] = dict(x=list(v["x"]), y=list(v["y"]), shape=v["shape"], filled=v["filled"])
+        axa.set_xlim(0, 200)
+        axa.set_ylim(21, 0)
+        axa.set_xticks([0, 50, 100, 150, 200])
+        axa.set_yticks([0, 5, 10, 15, 20])
+        axa.xaxis.set_label_position("top")
+        axa.tick_params(labeltop=True, labelbottom=False)
+        axa.set_xlabel("CH$_4$ (µmol L$^{-1}$)")
+        axa.set_ylabel("Depth (m)")
+        axa.legend(loc="lower left", fontsize=7, numpoints=1, frameon=False)
+        yb = np.arange(1, 10, 1.0)
+        sb = {
+            "S1": dict(x=-8 + 1.5 * yb, y=yb, marker="s", mfc="none", shape="square", filled=False),
+            "S2": dict(x=np.array([-6.0, -2, 2, 6]), y=np.array([8.5, 6.5, 4.5, 2.5]), marker="D", mfc="k",
+                       shape="diamond", filled=True),
+        }
+        for lab, v in sb.items():
+            axb.plot(v["x"], v["y"], marker=v["marker"], mfc=v["mfc"], ls="none", ms=5, color="k", mew=0.8)
+            exp["b"][lab] = dict(x=list(v["x"]), y=list(v["y"]), shape=v["shape"], filled=v["filled"])
+        axb.set_xlim(-10, 10)
+        axb.set_ylim(0, 10)
+        axb.set_xticks([-10, -5, 0, 5, 10])
+        axb.set_yticks([0, 2, 4, 6, 8, 10])
+        axb.set_xlabel("δ$^{13}$C (‰)")
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=dpi)
+        W, H = fig.canvas.get_width_height()
+        boxes = {}
+        for key, ax in (("a", axa), ("b", axb)):
+            tb = ax.get_tightbbox(renderer)
+            boxes[key] = (tb.x0, H - tb.y1, tb.x1, H - tb.y0)   # image px, top-left origin
+        leg = axa.get_legend().get_window_extent(renderer)
+        legbox = (leg.x0, H - leg.y1, leg.x1, H - leg.y0)
+        plt.close(fig)
+
+    doc = pymupdf.open()
+    page = doc.new_page(width=PAGE_W, height=PAGE_H)
+    X0, Y0, w_pt = 60.0, 80.0, 490.0
+    s = w_pt / W
+    rect = pymupdf.Rect(X0, Y0, X0 + w_pt, Y0 + H * s)
+    page.insert_image(rect, stream=buf.getvalue())
+    page.insert_text((X0, rect.y1 + 14), "Fig. 4. Synthetic raster figure (embedded PNG).", fontsize=8)
+    path = Path(path)
+    doc.save(path)
+
+    def pt(b, pad=2.0):
+        return [round(X0 + b[0] * s - pad, 2), round(Y0 + b[1] * s - pad, 2),
+                round(X0 + b[2] * s + pad, 2), round(Y0 + b[3] * s + pad, 2)]
+
+    card = {
+        "paper": {"citekey": "Raster2026", "pdf": str(path)},
+        "figure": {"number": "4", "page_pdf": 1, "kind": "raster"},
+        "panels": [
+            {"id": "a", "bbox_pt": pt(boxes["a"]),
+             "x": {"title": "CH4", "unit": "µmol/L", "ticks": [0, 50, 100, 150, 200]},
+             "y": {"title": "Depth", "unit": "m", "inverted": True, "ticks": [0, 5, 10, 15, 20]},
+             "legend": {"bbox_pt": pt(legbox, 1.0)},
+             "series": [
+                 {"label": "May", "marker": "circle", "filled": True, "line": "solid", "expected_count": 11},
+                 {"label": "Aug", "marker": "circle", "filled": False, "line": "dashed", "expected_count": 11},
+                 {"label": "Oct", "marker": "triangle", "filled": True, "line": "none", "expected_count": 5},
+             ]},
+            {"id": "b", "bbox_pt": pt(boxes["b"]),
+             "x": {"title": "d13C", "unit": "permil", "ticks": [-10, -5, 0, 5, 10]},
+             "y": {"title": "Height", "unit": "m", "ticks": [0, 2, 4, 6, 8, 10]},
+             "series": [
+                 {"label": "S1", "marker": "square", "filled": False, "line": "none", "expected_count": 9},
+                 {"label": "S2", "marker": "diamond", "filled": True, "line": "none", "expected_count": 4},
+             ]},
+        ],
+    }
+    return path, card, exp

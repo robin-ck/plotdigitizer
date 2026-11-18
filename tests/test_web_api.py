@@ -205,3 +205,21 @@ def test_job_timeout_kills_worker():
     assert run_sync("_sleep", (0,), timeout=20) == {"ok": True}
     with pytest.raises(JobFailed):
         run_sync("render_page", ("/nonexistent.pdf", 1, 1, "/tmp/x.png"), timeout=20)
+
+
+def test_raster_figure_end_to_end(client, rasterfig):
+    pdf, card, _ = rasterfig
+    r = upload(client, pdf, "Raster2026")
+    assert r.status_code == 201, r.text
+    s = r.json()
+    t = s["token"]
+    pc = card["panels"][1]
+    r = client.post(f"/api/s/{t}/detect", json={"page": 1, "bbox": pc["bbox_pt"]})
+    assert r.status_code == 200, r.text
+    assert r.json()["method"] == "raster" and len(r.json()["y"]["major"]) == 6
+    leg = client.post(f"/api/s/{t}/legend", json={"page": 1, "bbox": card["panels"][0]["legend"]["bbox_pt"]}).json()
+    assert [m["marker"] for m in leg] == ["circle", "circle", "triangle"]
+    wc = web_card(card)
+    wc["figure"]["kind"] = "vector"            # the server decides per panel
+    r = client.post(f"/api/s/{t}/figures/4/extract", json={"card": wc})
+    assert r.status_code == 200, r.text

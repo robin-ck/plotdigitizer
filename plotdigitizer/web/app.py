@@ -262,7 +262,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
         if not isinstance(card["figure"], dict):
             raise HTTPException(400, "card.figure must be an object")
         card["figure"]["number"] = num
-        card["figure"]["kind"] = "vector"
+        card["figure"]["kind"] = "auto"   # per panel: raster where an image covers it
         check_page(d, card["figure"].get("page_pdf"))
         for pc in card.get("panels") or []:
             if not isinstance(pc, dict) or not PID_RE.match(str(pc.get("id", ""))):

@@ -804,10 +804,18 @@ def detect_ticks(drawings: Sequence[dict], bbox: Sequence[float],
     ``ticks`` (all tick positions), ``tick_lengths`` and ``major`` (longest
     ticks), or ``error`` if no axis line was found.
     """
-    side = side or {}
     segs = stroke_segments(drawings, bbox, exclude=exclude)
+    out = detect_ticks_from_segments({"x": segs, "y": segs}, bbox, side)
+    out["method"] = "vector"
+    return out
+
+
+def detect_ticks_from_segments(segs_by_axis: dict, bbox: Sequence[float], side: dict | None = None) -> dict:
+    """``detect_ticks`` on given segments (shared with the raster path)."""
+    side = side or {}
     out = {}
     for orient in ("x", "y"):
+        segs = segs_by_axis[orient]
         try:
             ln = find_axis(segs, bbox, orient, 10 ** 6, side.get(orient))
             out[orient] = {"coord": ln.coord, "lo": ln.lo, "hi": ln.hi, "ticks": list(ln.ticks),

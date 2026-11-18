@@ -71,7 +71,7 @@ def test_bastviken_fig2_reference_values(bastviken):
         assert abs(best["x_value"] - float(x["CH4 (µmol/L)"])) <= tol
 
 
-@pytest.mark.skip(reason="stage 5 (raster) not implemented; Blees2014.pdf not provided")
+@pytest.mark.skip(reason="Blees2014.pdf and its Figure Card not provided")
 def test_blees_fig1_raster():
     """44 CH4, 40 d13C, 25 MOR values after WPD correction, plus axis points."""
 
@@ -81,6 +81,6 @@ def test_blees_text_checks():
     """near-bottom 40-160 umol/L CH4; sediment from 20 cm ~5 mmol/L."""
 
 
-@pytest.mark.skip(reason="stage 5 (raster) not implemented")
+@pytest.mark.skip(reason="axis breaks are not handled by the raster path yet")
 def test_blees_axis_break_open_question():
     """one tick after the break -> open question, no invented values."""
