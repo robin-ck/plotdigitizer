@@ -781,3 +781,47 @@ def page_drawings(pdf_path: str, page_number_1based: int):
     doc = pymupdf.open(pdf_path)
     page = doc[page_number_1based - 1]
     return page, page.get_drawings()
+
+
+# --------------------------------------------------------------------------
+# Set-up helpers (web interface): detection for a box the user has drawn
+# --------------------------------------------------------------------------
+
+def _major_guess(line: AxisLine) -> list[float]:
+    """Ticks of the longest length class (major ticks); all ticks if uniform."""
+    if not line.ticks:
+        return []
+    lens = np.round(np.array(line.tick_lengths), 2)
+    L = float(lens.max())
+    return [p for p, l in zip(line.ticks, lens) if l >= L - 0.05]
+
+
+def detect_ticks(drawings: Sequence[dict], bbox: Sequence[float],
+                 exclude: Sequence[Sequence[float]] = (), side: dict | None = None) -> dict:
+    """Axis lines and tick positions inside a user-drawn panel box.
+
+    Returns ``{"x": {...}, "y": {...}}``; each axis has ``coord``, ``lo``, ``hi``,
+    ``ticks`` (all tick positions), ``tick_lengths`` and ``major`` (longest
+    ticks), or ``error`` if no axis line was found.
+    """
+    side = side or {}
+    segs = stroke_segments(drawings, bbox, exclude=exclude)
+    out = {}
+    for orient in ("x", "y"):
+        try:
+            ln = find_axis(segs, bbox, orient, 10 ** 6, side.get(orient))
+            out[orient] = {"coord": ln.coord, "lo": ln.lo, "hi": ln.hi, "ticks": list(ln.ticks),
+                           "tick_lengths": list(ln.tick_lengths), "major": _major_guess(ln)}
+        except AxisError as e:
+            out[orient] = {"error": str(e), "ticks": [], "major": []}
+    return out
+
+
+def detect_legend(drawings: Sequence[dict], bbox: Sequence[float], size_pt: Sequence[float] | None = None) -> list[dict]:
+    """Legend markers in a user-drawn box, top to bottom (as series_signatures orders them)."""
+    lo, hi = size_pt or (0.0, 12.0)
+    ms = [m for m in collect(drawings, bbox, max_size=12.0) if lo <= m["w"] <= hi and lo <= m["h"] <= hi]
+    ms.sort(key=lambda m: (round(m["y"], 1), m["x"]))
+    return [{"marker": SHAPE_NAMES.get(m["shape"], m["shape"]), "filled": m["filled"],
+             "color": list(m["color"]) if m["color"] else None, "x": m["x"], "y": m["y"],
+             "size": max(m["w"], m["h"])} for m in ms]

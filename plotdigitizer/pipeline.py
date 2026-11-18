@@ -61,15 +61,20 @@ def finalize(card: dict, panels: list[dict], outdir: Path, pdf_path: str | None,
     return {"rows": rows, "checks": checks, "errors": errors, "warnings": warnings, "wpd": wpd_meta}
 
 
-def digitize(pdf_path: str, card: dict, out_root: str | Path = "out") -> dict:
-    validate_card(card)
-    outdir = figure_dir(out_root, card)
-    outdir.mkdir(parents=True, exist_ok=True)
-    logp = outdir / "log.jsonl"
-    if logp.exists():
-        logp.unlink()
-    log = EventLog(logp)
-    log("cli", "start", pdf=str(pdf_path), citekey=card["paper"]["citekey"], figure=card["figure"]["number"])
+def assign_ids(panels: list[dict]) -> None:
+    """Give every point a stable id ``<block>#<n>`` (unique within its panel)."""
+    for panel in panels:
+        for key, blk in panel["blocks"].items():
+            n = blk.get("next_id", 0)
+            for p in blk["points"]:
+                if "id" not in p:
+                    p["id"] = f"{key}#{n}"
+                    n += 1
+            blk["next_id"] = n
+
+
+def extract(pdf_path: str, card: dict, log) -> list[dict]:
+    """Card in, raw panels (with point ids) out."""
     kind = card["figure"].get("kind", "vector")
     if kind != "vector":
         from . import raster
@@ -77,11 +82,37 @@ def digitize(pdf_path: str, card: dict, out_root: str | Path = "out") -> dict:
     page, drawings = vector.page_drawings(pdf_path, card["figure"]["page_pdf"])
     log("vector", "page", page=card["figure"]["page_pdf"], n_drawings=len(drawings))
     panels = [vector.extract_panel(drawings, pc, log) for pc in card["panels"]]
-    res = finalize(card, panels, outdir, pdf_path, log)
+    assign_ids(panels)
+    return panels
+
+
+def write_state(outdir: Path, state: dict) -> None:
+    (Path(outdir) / "state.json").write_text(json.dumps(state), encoding="utf-8")
+
+
+def load_state(outdir: str | Path) -> dict:
+    return json.loads((Path(outdir) / "state.json").read_text(encoding="utf-8"))
+
+
+def digitize(pdf_path: str, card: dict, out_root: str | Path = "out", reset_log: bool = True,
+             export_wpd: bool = True, source: str = "cli") -> dict:
+    """Extract one figure. The CLI resets ``log.jsonl``; the web path appends
+    (``reset_log=False``) so earlier runs and manual edits stay in the audit trail."""
+    validate_card(card)
+    outdir = figure_dir(out_root, card)
+    outdir.mkdir(parents=True, exist_ok=True)
+    logp = outdir / "log.jsonl"
+    if reset_log and logp.exists():
+        logp.unlink()
+    log = EventLog(logp)
+    log(source, "run_start", pdf=str(pdf_path), citekey=card["paper"]["citekey"], figure=card["figure"]["number"])
+    panels = extract(pdf_path, card, log)
+    res = finalize(card, panels, outdir, pdf_path, log, export_wpd=export_wpd)
     (outdir / "figure_card.json").write_text(json.dumps(card, indent=2, ensure_ascii=False), encoding="utf-8")
-    state = {"pdf": str(Path(pdf_path).resolve()), "card": card, "panels": panels, "wpd": res["wpd"]}
-    (outdir / "state.json").write_text(json.dumps(state), encoding="utf-8")
-    log("cli", "done", points=len(res["rows"]), errors=len(res["errors"]), warnings=len(res["warnings"]))
+    state = {"pdf": str(Path(pdf_path).resolve()), "card": card, "panels": panels, "wpd": res["wpd"],
+             "validation": None, "reviewed_panels": []}
+    write_state(outdir, state)
+    log(source, "done", points=len(res["rows"]), errors=len(res["errors"]), warnings=len(res["warnings"]))
     res["outdir"] = outdir
     return res
 
