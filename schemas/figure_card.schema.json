@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Figure Card",
+  "description": "Context for one figure. Written by hand for now (later by LLM step P3). Tick VALUES come from the card; tick POSITIONS are measured by code. A tick given as [position, value] is used as a fallback/override (position in PDF pt for vector figures, image px for raster).",
+  "type": "object",
+  "required": ["paper", "figure", "panels"],
+  "$defs": {
+    "tick": {
+      "oneOf": [
+        {"type": "number"},
+        {"type": "array", "prefixItems": [{"type": "number"}, {"type": "number"}], "minItems": 2, "maxItems": 2}
+      ]
+    },
+    "bbox": {"type": "array", "items": {"type": "number"}, "minItems": 4, "maxItems": 4},
+    "axis": {
+      "type": "object",
+      "required": ["ticks"],
+      "properties": {
+        "title": {"type": "string"},
+        "unit": {"type": "string"},
+        "scale": {"enum": ["linear", "log"]},
+        "inverted": {"type": "boolean", "description": "Values increase downward (y) or leftward (x), e.g. depth profiles."},
+        "side": {"enum": ["bottom", "top", "left", "right"], "description": "Which spine carries the ticks; auto-detected if omitted."},
+        "ticks": {"type": "array", "items": {"$ref": "#/$defs/tick"}, "minItems": 2,
+                   "description": "Major tick values in drawing order (left to right, top to bottom)."},
+        "break": {}
+      }
+    },
+    "series": {
+      "type": "object",
+      "required": ["label"],
+      "properties": {
+        "label": {"type": "string"},
+        "meaning": {"type": "string"},
+        "marker": {"enum": ["square", "circle", "triangle", "diamond", "x", "plus", "star", "none"]},
+        "filled": {"type": "boolean"},
+        "line": {"type": "string"},
+        "color": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3},
+        "expected_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "legend": {
+      "type": "object",
+      "properties": {
+        "bbox_pt": {"$ref": "#/$defs/bbox"},
+        "bbox_px": {"$ref": "#/$defs/bbox"}
+      }
+    },
+    "inset": {
+      "type": "object",
+      "required": ["id", "x", "y"],
+      "properties": {
+        "id": {"type": "string"},
+        "bbox_pt": {"$ref": "#/$defs/bbox"},
+        "bbox_px": {"$ref": "#/$defs/bbox"},
+        "x": {"$ref": "#/$defs/axis"},
+        "y": {"$ref": "#/$defs/axis"},
+        "legend": {"$ref": "#/$defs/legend"},
+        "marker_size_pt": {"$ref": "#/$defs/range"},
+        "merge_on": {"enum": ["x", "y"], "default": "y"},
+        "merge_tol": {"type": "number", "default": 0.2}
+      }
+    },
+    "range": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
+    "panel": {
+      "type": "object",
+      "required": ["id", "x", "y", "series"],
+      "properties": {
+        "id": {"type": "string"},
+        "bbox_pt": {"$ref": "#/$defs/bbox"},
+        "bbox_px": {"$ref": "#/$defs/bbox"},
+        "x": {"$ref": "#/$defs/axis"},
+        "y": {"$ref": "#/$defs/axis"},
+        "insets": {"type": "array", "items": {"$ref": "#/$defs/inset"}},
+        "legend": {"$ref": "#/$defs/legend"},
+        "series": {"type": "array", "items": {"$ref": "#/$defs/series"}},
+        "marker_size_pt": {"$ref": "#/$defs/range"},
+        "bands": {"type": "array", "items": {"$ref": "#/$defs/range"}, "description": "Grey bands in y data units, for the replot."}
+      }
+    }
+  },
+  "properties": {
+    "paper": {
+      "type": "object",
+      "required": ["citekey"],
+      "properties": {"citekey": {"type": "string"}, "doi": {"type": "string"}, "pdf": {"type": "string"}}
+    },
+    "figure": {
+      "type": "object",
+      "required": ["number", "page_pdf"],
+      "properties": {
+        "number": {"type": "string"},
+        "page_pdf": {"type": "integer", "minimum": 1, "description": "1-based page index in the PDF file."},
+        "page_journal": {"type": "string"},
+        "caption": {"type": "string"},
+        "kind": {"enum": ["vector", "raster"]},
+        "bbox": {"$ref": "#/$defs/bbox"}
+      }
+    },
+    "context": {"type": "object"},
+    "panels": {"type": "array", "items": {"$ref": "#/$defs/panel"}, "minItems": 1},
+    "abbreviations": {"type": "object", "additionalProperties": {"type": "string"}},
+    "text_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim"],
+        "properties": {
+          "claim": {"type": "string"},
+          "where": {"type": "string"},
+          "check": {
+            "type": "object",
+            "description": "Optional machine-checkable form of the claim.",
+            "properties": {
+              "panel": {"type": "string"},
+              "series": {"type": ["string", "null"]},
+              "variable": {"enum": ["x", "y"]},
+              "where_y": {"$ref": "#/$defs/range"},
+              "min": {"type": "number"},
+              "max": {"type": "number"},
+              "tolerance": {"type": "number"}
+            }
+          }
+        }
+      }
+    },
+    "open_questions": {"type": "array", "items": {"type": "string"}}
+  }
+}
