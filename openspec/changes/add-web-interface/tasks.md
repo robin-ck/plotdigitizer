@@ -26,5 +26,5 @@
 - [ ] 3.6 Browser smoke test with Playwright on a synthetic PDF (upload → set up → extract → edit → validate → CSV)
 
 ## 4. Docs and deploy
-- [ ] 4.1 README section: run locally, configuration
-- [ ] 4.2 Deployment note: uvicorn behind a reverse proxy, data dir, trusted proxy, upload size in proxy
+- [x] 4.1 README section: run locally, configuration
+- [x] 4.2 Deployment note: uvicorn behind a reverse proxy, data dir, trusted proxy, upload size in proxy

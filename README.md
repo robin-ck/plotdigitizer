@@ -34,6 +34,26 @@ Output per figure in `out/<citekey>/fig<N>/`: `points.csv`, `points_sheet.csv`
 (date-like labels forced to text), `figure_card.json`, `compare.png`,
 `panel_<id>_wpd.json/.tar/.png`, `state.json`, `log.jsonl`.
 
+## Web interface
+
+A browser interface for other researchers: upload a PDF, set up a figure by
+drawing boxes on the page, review the extracted points next to the original
+and download the CSV. No Figure Card JSON needed.
+
+```bash
+pip install -e .[web]
+plotdigitizer serve --port 8000
+```
+
+Open http://127.0.0.1:8000. Sessions are anonymous (private link) and are
+deleted after 7 days, PDF and results included. Configuration is by
+environment variables (`PD_DATA_ROOT`, `PD_MAX_UPLOAD_MB`, `PD_MAX_PAGES`,
+`PD_JOB_TIMEOUT_S`, `PD_MAX_JOBS`, `PD_DISK_CAP_GB`, `PD_RETENTION_DAYS`,
+`PD_TRUSTED_PROXY`, `PD_UPLOADS_PER_HOUR`, `PD_JOBS_PER_10MIN`). Running it on
+a public server: see `docs/deployment.md`. Design:
+`docs/superpowers/specs/2026-11-18-web-review-ui-design.md`; API:
+`openspec/changes/add-web-interface/api.md`.
+
 ## Figure Card essentials (vector)
 
 * `figure.page_pdf`: 1-based page index.
