@@ -82,8 +82,11 @@ class Store:
                 exp = _dt.datetime.fromisoformat(m["expires_at"])
                 created = _dt.datetime.fromisoformat(m["created_at"])
                 dead = exp <= now() or ("n_pages" not in m and now() - created > _dt.timedelta(hours=1))
-            except Exception:  # noqa: BLE001  broken folder
-                dead = True
+            except Exception:  # noqa: BLE001  broken folder, or one being created right now
+                try:
+                    dead = now().timestamp() - d.stat().st_mtime > 3600
+                except OSError:  # already gone
+                    continue
             if dead:
                 shutil.rmtree(d, ignore_errors=True)
                 n += 1
