@@ -93,3 +93,15 @@ def test_cli_ticks(mpl, capsys):
                  "--exclude", ",".join(str(v) for v in pc["legend"]["bbox_pt"])]) == 0
     out = capsys.readouterr().out
     assert "x: [1, 10, 100, 1000]  scale=log" in out
+
+
+def test_drop_strokes_keeps_glyphs():
+    import numpy as np
+    ink = np.zeros((60, 100), bool)
+    ink[:, 10:12] = True          # frame / tick line across the window
+    ink[30, :] = True             # horizontal grid line
+    ink[5:20, 40:50] = True       # a glyph
+    out = tl._drop_strokes(ink)
+    assert not out[:, 9:13].any() and not out[30].any()
+    assert out[5:20, 40:50].all()
+    assert tl._isolate(ink, "x", "top") == (5, 19, 40, 49)
