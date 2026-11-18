@@ -18,6 +18,7 @@ P1–P5 are stubs.
 | 3 Figure Card | `figure_card.py` | hand-written, schema-validated |
 | 4 vector | `vector.py` | implemented (spec parser + extensions) |
 | tick values | `ticklabels.py` | PDF text + OCR fallback, suggestions only |
+| series names | `legendlabels.py` | legend text: PDF text + OCR fallback, suggestions only |
 | 5 raster | `raster.py` | implemented (pixels -> PDF pt, template matching) |
 | 6 validation | `validate.py` | checks + comparison PNG |
 | 7 WebPlotDigitizer | `wpd.py` | export + re-import with diff log (format unverified) |
@@ -78,6 +79,14 @@ are always marked "check every value". The web form fills empty tick fields
 with the suggestion and sets log scale and inverted; typed values are never
 overwritten. Labels are looked for on both frame lines (ticks are often
 mirrored on all four sides).
+
+## Series names from the legend
+
+When a legend box is drawn in the web set-up screen, the text on each marker's
+row (right of the marker, else left; stops at the next marker in multi-column
+legends) is read as the series name: PDF text layer first, Tesseract OCR as
+fallback (same `ocr` extra). OCR names are highlighted for checking; typed
+names are never overwritten.
 
 ## Raster figures (stage 5)
 

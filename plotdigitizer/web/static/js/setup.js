@@ -443,9 +443,15 @@ export async function render(app, { token, num, query }) {
         s.marker = SHAPES.includes(m.marker) ? m.marker : "circle";
         s.filled = !!m.filled;
         s.color = m.color;
+        // suggested name from the legend text; never overwrite a typed name
+        if (m.label && (!s.label || s.labelSrc)) { s.label = m.label; s.labelSrc = m.label_source; }
         return s;
       });
-      p.legendMsg = ms.length ? `${ms.length} legend markers found, top to bottom.` : "No markers found in the legend box. Add series by hand.";
+      const nNamed = ms.filter((m) => m.label).length;
+      const nOcr = ms.filter((m) => m.label_source === "ocr").length;
+      p.legendMsg = !ms.length ? "No markers found in the legend box. Add series by hand."
+        : `${ms.length} legend markers found, top to bottom.`
+          + (nNamed ? ` ${nNamed} name${nNamed > 1 ? "s" : ""} read from the legend${nOcr ? " (OCR: check the marked names)" : ""}.` : "");
     } catch (e) {
       p.legendMsg = `Legend could not be read: ${e.message}`;
     } finally { done(); }
@@ -495,8 +501,10 @@ export async function render(app, { token, num, query }) {
     p.series.forEach((s, si) => {
       const icon = h("span", { class: "marker-cell" }, markerIcon(s.marker, s.filled, "#1f2933", 18));
       const refreshIcon = () => { clear(icon); icon.appendChild(markerIcon(s.marker, s.filled, "#1f2933", 18)); };
-      const name = h("input", { class: "text", id: `s-${pi}-${si}-name`, value: s.label, placeholder: "Name (label)", "aria-label": `Series ${si + 1} name`, "data-field": `${pi}.s${si}`,
-        oninput: (e) => { s.label = e.target.value; updateValidity(); } });
+      const ocr = s.labelSrc === "ocr";
+      const name = h("input", { class: `text${ocr ? " ocr" : ""}`, id: `s-${pi}-${si}-name`, value: s.label, placeholder: "Name (label)", "aria-label": `Series ${si + 1} name`, "data-field": `${pi}.s${si}`,
+        title: ocr ? "Read from the figure image (OCR): check this name" : s.labelSrc === "pdf" ? "Read from the legend text" : "",
+        oninput: (e) => { s.label = e.target.value; s.labelSrc = null; e.target.classList.remove("ocr"); updateValidity(); } });
       const meaning = h("input", { class: "text meaning", id: `s-${pi}-${si}-meaning`, value: s.meaning, placeholder: "Meaning (optional)", "aria-label": `Series ${si + 1} meaning`,
         oninput: (e) => (s.meaning = e.target.value) });
       const del = h("button", { type: "button", class: "btn icon", "aria-label": `Remove series ${si + 1}`, title: "Remove series",

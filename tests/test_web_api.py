@@ -99,6 +99,7 @@ def test_detect_and_legend(session):
     assert "labels" in r.json()["x"] and "labels" in r.json()["y"]   # journal PDF: no label text
     r = c.post(f"/api/s/{s['token']}/legend", json={"page": 1, "bbox": pc["legend"]["bbox_pt"]})
     assert [m["marker"] for m in r.json()] == [x["marker"] for x in pc["series"]]
+    assert all("label" in m and "label_source" in m for m in r.json())   # no legend text here
     assert c.post(f"/api/s/{s['token']}/detect", json={"page": 1, "bbox": [1, 2]}).status_code == 400
 
 
