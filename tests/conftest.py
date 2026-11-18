@@ -35,3 +35,9 @@ def mpl_run(mpl, tmp_path_factory):
     pdf, card, exp = mpl
     out = tmp_path_factory.mktemp("out_mpl")
     return digitize(str(pdf), card, out), exp
+
+
+@pytest.fixture(scope="session")
+def rasterfig(tmp_path_factory):
+    d = tmp_path_factory.mktemp("raster")
+    return synthetic.make_raster_pdf(d / "raster.pdf")

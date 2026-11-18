@@ -519,32 +519,41 @@ def read_tick_labels(page, bbox: Sequence[float], axes: dict, exclude: Sequence[
     def keep(toks):
         return [t for t in toks if not any(_in_box(t, e) for e in exclude)]
 
-    def run(toks):
-        out = {}
-        for o in ("x", "y"):
-            ax = axes.get(o) or {}
-            if ax.get("error") or not ax.get("major"):
-                out[o] = {"error": "no ticks to label", "suggested": None, "values": []}
-            else:
-                out[o] = read_axis_labels(toks, o, ax["coord"], ax["major"])
-        return out
+    def n_read(r):
+        return sum(v is not None for v in r.get("values", []))
 
-    res = run(keep(pdf_tokens(page, region))) if ocr != "always" else None
+    def coords(o):
+        """The detected axis line first, then the opposite frame line: with
+        ticks mirrored on all four sides the labelled one may be either."""
+        ax, other = axes[o], axes["y" if o == "x" else "x"]
+        cs = [ax["coord"]]
+        if not other.get("error") and other.get("lo") is not None:
+            cs += [c for c in (other["lo"], other["hi"]) if abs(c - ax["coord"]) > 2]
+        return cs
 
-    def usable(r):
-        return r and any(sum(v is not None for v in r[o].get("values", [])) >= 2 for o in ("x", "y"))
+    def best(results):
+        return max(results, key=lambda r: (n_read(r), r.get("suggested") is not None))
 
-    if ocr == "always" or (ocr == "auto" and not usable(res)):
-        if ocr_available():
-            r2 = run(keep(ocr_tokens(page, axes)))
-            if res is None:
-                res = r2
-            else:  # per axis: keep text-layer result where it worked
-                for o in ("x", "y"):
-                    if sum(v is not None for v in res[o].get("values", [])) < 2:
-                        res[o] = r2[o]
-        elif res is not None:
-            for o in ("x", "y"):
-                if "error" not in res[o] and res[o].get("suggested") is None:
-                    res[o]["message"] += " (No text in the PDF here and OCR is not installed.)"
+    text = keep(pdf_tokens(page, region)) if ocr != "always" else []
+    res = {}
+    for o in ("x", "y"):
+        ax = axes.get(o) or {}
+        if ax.get("error") or not ax.get("major"):
+            res[o] = {"error": "no ticks to label", "suggested": None, "values": []}
+            continue
+        r = best([dict(read_axis_labels(text, o, c, ax["major"]), label_coord=c) for c in coords(o)])
+        if ocr == "always" or (ocr == "auto" and n_read(r) < 2):
+            if ocr_available():
+                cands = []
+                for c in coords(o):
+                    toks = keep(ocr_tokens(page, {o: dict(ax, coord=c)}))
+                    cands.append(dict(read_axis_labels(toks, o, c, ax["major"]), label_coord=c))
+                    if n_read(cands[-1]) >= 2:
+                        break
+                r2 = best(cands)
+                if ocr == "always" or n_read(r2) > n_read(r):
+                    r = r2
+            elif r.get("suggested") is None:
+                r["message"] += " (No text in the PDF here and OCR is not installed.)"
+        res[o] = r
     return res

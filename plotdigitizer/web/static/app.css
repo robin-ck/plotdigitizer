@@ -282,3 +282,5 @@ dialog.modal form { display: flex; flex-direction: column; gap: 14px; }
   .series-row { grid-template-columns: 28px minmax(0, 1fr) 40px; }
   .series-row .meaning { grid-column: 2 / 3; }
 }
+table.points .st-weak { color: #92400e; font-weight: 600; }
+table.points .st-fair { color: var(--muted); }

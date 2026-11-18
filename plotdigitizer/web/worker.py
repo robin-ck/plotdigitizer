@@ -30,9 +30,7 @@ def inspect_pdf(pdf: str, max_pages: int) -> dict:
         figs = []
     for f in figs:
         f.pop("image_xrefs", None)
-        f["supported"] = f["kind"] == "vector" and not f.get("mixed")
-        if not f["supported"]:
-            f["reason"] = "Raster: coming later"
+        f["supported"] = True
     return {"n_pages": doc.page_count, "page_sizes": sizes, "figures": figs}
 
 
@@ -50,9 +48,12 @@ def render_page(pdf: str, page: int, zoom: int, out: str) -> dict:
 def detect(pdf: str, page: int, bbox, exclude, side) -> dict:
     """Tick positions (drawing commands) plus suggested tick values (PDF text,
     OCR fallback) under ``labels`` on each axis."""
-    from .. import ticklabels, vector
+    from .. import raster, ticklabels, vector
     pg, drawings = vector.page_drawings(pdf, page)
-    det = vector.detect_ticks(drawings, bbox, exclude=exclude or (), side=side)
+    if raster.is_raster_region(pg, bbox):
+        det = raster.detect_ticks(pg, drawings, bbox, exclude=exclude or (), side=side)
+    else:
+        det = vector.detect_ticks(drawings, bbox, exclude=exclude or (), side=side)
     try:
         labels = ticklabels.read_tick_labels(pg, bbox, det, exclude=exclude or ())
     except Exception as e:  # noqa: BLE001  reading labels must never block set-up
@@ -64,8 +65,10 @@ def detect(pdf: str, page: int, bbox, exclude, side) -> dict:
 
 
 def legend(pdf: str, page: int, bbox) -> list:
-    from .. import vector
-    _, drawings = vector.page_drawings(pdf, page)
+    from .. import raster, vector
+    pg, drawings = vector.page_drawings(pdf, page)
+    if raster.is_raster_region(pg, bbox):
+        return raster.detect_legend(pg, bbox)
     return vector.detect_legend(drawings, bbox)
 
 

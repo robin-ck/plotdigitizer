@@ -29,7 +29,7 @@ traceable to figure, panel, series and page, all in the browser.
 
 ## Non-goals (for this version)
 
-- Raster figures (stage 5 is a stub): shown in the figure list as "coming later".
+- Raster figures: supported since stage 5 (`raster.py`); the server picks raster or vector per panel (`figure.kind = "auto"`).
 - LLM-drafted Figure Cards (P1 to P5 are stubs). The design must not block
   adding them later as a "suggest card" step before the set-up screen.
 - Accounts, logins, sharing data between users, a common dataset.

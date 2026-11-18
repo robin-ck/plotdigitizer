@@ -466,7 +466,9 @@ export async function render(app, { token, num, query }) {
     const xName = p.x?.title || "x", yName = p.y?.title || "y";
     const tbody = h("tbody");
     for (const q of pts) {
-      const st_ = q.edited || "extracted";
+      // raster matches: confidence from the template match score (gut / mittel / gering)
+      const weak = { mittel: "extracted (fair match)", gering: "check: weak match" }[q.confidence];
+      const st_ = q.edited || weak || "extracted";
       const xi = h("input", { value: fmt(q.x_value), "aria-label": `${xName} value of ${q.series} point ${q.id}`, inputmode: "decimal", "data-key": `${q.id}:x` });
       const yi = h("input", { value: fmt(q.y_value), "aria-label": `${yName} value of ${q.series} point ${q.id}`, inputmode: "decimal", "data-key": `${q.id}:y` });
       const commit = (e) => {
@@ -489,7 +491,7 @@ export async function render(app, { token, num, query }) {
         h("td", { title: inf.meaning || "" }, h("span", { class: "series-cell" }, markerIcon(q.shape || inf.shape, q.filled ?? inf.filled, inf.color, 14), q.series,
           q.block !== "main" ? h("span", { class: "muted" }, ` (${q.block.replace("inset:", "inset ")})`) : null)),
         h("td", { class: "num" }, xi), h("td", { class: "num" }, yi),
-        h("td", { class: `st-${st_}` }, st_)));
+        h("td", { class: q.edited ? `st-${q.edited}` : weak ? `st-${q.confidence === "gering" ? "weak" : "fair"}` : "st-extracted" }, st_)));
     }
     side.appendChild(h("h2", { style: { fontSize: "17px" } }, `Points (${pts.length})`));
     side.appendChild(h("p", { class: "small muted" }, "Click a row to select the point. Type a value and press Enter to move it."));

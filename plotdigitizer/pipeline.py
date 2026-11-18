@@ -76,12 +76,20 @@ def assign_ids(panels: list[dict]) -> None:
 def extract(pdf_path: str, card: dict, log) -> list[dict]:
     """Card in, raw panels (with point ids) out."""
     kind = card["figure"].get("kind", "vector")
-    if kind != "vector":
-        from . import raster
-        raster.extract_panel()
     page, drawings = vector.page_drawings(pdf_path, card["figure"]["page_pdf"])
     log("vector", "page", page=card["figure"]["page_pdf"], n_drawings=len(drawings))
-    panels = [vector.extract_panel(drawings, pc, log) for pc in card["panels"]]
+    panels = []
+    for pc in card["panels"]:
+        method = kind
+        if kind == "auto":
+            from .raster import is_raster_region
+            method = "raster" if pc.get("bbox_pt") and is_raster_region(page, pc["bbox_pt"]) else "vector"
+            log("pipeline", "method", panel=pc["id"], method=method)
+        if method == "raster":
+            from . import raster
+            panels.append(raster.extract_panel(page, drawings, pc, log))
+        else:
+            panels.append(vector.extract_panel(drawings, pc, log))
     assign_ids(panels)
     return panels
 
