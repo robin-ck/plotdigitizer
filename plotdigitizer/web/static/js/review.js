@@ -111,7 +111,7 @@ export async function render(app, { token, num, query }) {
   const panel = () => st.rv.panels.find((p) => p.id === st.pid);
   function fitPanel() {
     const p = panel();
-    if (p && p.clip) viewL.fit(p.clip, 0);
+    if (p && p.clip) viewL.fit(p.clip, 14);
   }
 
   // series -> colour/shape
@@ -176,7 +176,9 @@ export async function render(app, { token, num, query }) {
           t.textContent = xt;
         }
         if (yt) {
-          const tx = right ? ay + tl + fs * 3.6 : ay - tl - fs * 3.2;
+          const maxLen = Math.max(1, ...cy.values.map((v) => fmt(v).length));
+          const off = tl + 2 + maxLen * fs * 0.6 + fs * 0.9;
+          const tx = right ? ay + off : ay - off;
           const t = svgEl("text", { class: "rp-label", x: tx, y: my, "font-size": fs * 1.1, "text-anchor": "middle", transform: `rotate(-90 ${tx} ${my})` }, g);
           t.textContent = yt;
         }
@@ -188,7 +190,7 @@ export async function render(app, { token, num, query }) {
   function markerR(q, info) {
     const s = info[q.series]?.size;
     const base = q.block === "main" ? 3 : 2.2;
-    return s ? Math.max(base * 0.8, Math.min(6, s / 2 * 1.15)) : base;
+    return s ? Math.max(base, Math.min(6, s / 2 * 1.4)) : base;
   }
 
   function drawPoints() {

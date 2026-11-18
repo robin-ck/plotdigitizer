@@ -232,13 +232,13 @@ body[data-tool="add"] .stage svg { cursor: crosshair; }
 
 .table-wrap { flex: 1; min-height: 200px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
 table.points { width: 100%; border-collapse: collapse; font-size: 13px; }
-table.points th { position: sticky; top: 0; background: var(--bg); text-align: left; padding: 8px; font-weight: 600; z-index: 1; }
-table.points td { padding: 4px 8px; border-top: 1px solid #eef1f4; height: 40px; }
+table.points th { position: sticky; top: 0; background: var(--bg); text-align: left; padding: 8px 6px; font-weight: 600; z-index: 1; }
+table.points td { padding: 4px 6px; border-top: 1px solid #eef1f4; height: 40px; }
 table.points tr { cursor: pointer; }
 table.points tr.selected { background: var(--primary-soft); }
 table.points tr.selected td:first-child { font-weight: 600; }
 table.points td.num input {
-  width: 84px; min-height: 32px; padding: 4px 6px; border: 1px solid transparent; border-radius: 4px; font: inherit;
+  width: 68px; min-height: 32px; padding: 4px 4px; border: 1px solid transparent; border-radius: 4px; font: inherit;
   background: transparent; color: var(--text); font-variant-numeric: tabular-nums;
 }
 table.points td.num input:hover { border-color: var(--border-strong); }
@@ -258,15 +258,19 @@ dialog.modal form { display: flex; flex-direction: column; gap: 14px; }
 
 /* ---------- narrow screens ---------- */
 @media (max-width: 1000px) {
+  html, body { height: auto; min-height: 100%; }
+  #app, .workspace, .canvas-col, .views { flex: none; min-height: auto; }
   .topbar { padding: 8px 16px; }
   .upload-layout { flex-direction: column; padding: 24px 16px; }
   .upload-layout > .col-left { width: 100%; }
   .workspace { flex-direction: column; }
   .canvas-col { padding: 16px; }
   .side, .side.narrow { width: 100%; border-left: none; border-top: 1px solid var(--border); padding: 16px; overflow: visible; }
-  .stage { min-height: 60vh; }
+  .stage { flex: none; height: 60vh; min-height: 320px; }
+  .view-card .stage { height: 50vh; }
   .views { grid-template-columns: minmax(0, 1fr); }
-  .view-card { min-height: 50vh; }
+  .view-card { min-height: 0; }
+  .table-wrap { max-height: 60vh; }
   .extract-bar { position: static; }
 }
 @media (max-width: 560px) {

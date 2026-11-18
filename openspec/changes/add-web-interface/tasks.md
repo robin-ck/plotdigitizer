@@ -18,13 +18,18 @@
 - [x] 2.7 API tests (FastAPI TestClient) for every endpoint, limits, isolation and expiry
 
 ## 3. Front end
-- [ ] 3.1 Shell, routing between the three screens, session link display
-- [ ] 3.2 Upload and figure picker screen
-- [ ] 3.3 Set-up screen: page view, draw/resize boxes, tick markers, panel/axis/series form, validation of tick counts
-- [ ] 3.4 Review screen: two synced views (original, re-plotted), crosshair, move/add/delete/undo
-- [ ] 3.5 Points table with inline editing, checks panel, validate dialog with reasons, CSV download
-- [ ] 3.6 Browser smoke test with Playwright on a synthetic PDF (upload → set up → extract → edit → validate → CSV)
+- [x] 3.1 Shell, routing between the three screens, session link display
+- [x] 3.2 Upload and figure picker screen
+- [x] 3.3 Set-up screen: page view, draw/resize boxes, tick markers, panel/axis/series form, validation of tick counts
+- [x] 3.4 Review screen: two synced views (original, re-plotted), crosshair, move/add/delete/undo
+- [x] 3.5 Points table with inline editing, checks panel, validate dialog with reasons, CSV download
+- [x] 3.6 Browser smoke test with Playwright on a synthetic PDF (upload → set up → extract → edit → validate → CSV)
 
 ## 4. Docs and deploy
 - [x] 4.1 README section: run locally, configuration
 - [x] 4.2 Deployment note: uvicorn behind a reverse proxy, data dir, trusted proxy, upload size in proxy
+
+## Known gaps (after 3.6)
+- Detected triangles are always drawn pointing up in the re-plot (the API only reports "triangle").
+- Set-up form has no control for the tick `side` and no [position, value] tick entry (saved pairs are kept).
+- Undo history is client-side and lost on reload; after undoing a move the status still reads "moved".

@@ -29,7 +29,7 @@ export function fmt(v) {
   if (v === null || v === undefined || Number.isNaN(v)) return "–";
   if (v === 0) return "0";
   const a = Math.abs(v);
-  if (a >= 1e6 || a < 1e-4) return v.toPrecision(4);
+  if (a >= 1e6 || a < 1e-4) return v.toExponential(3);
   return String(Number(v.toPrecision(4)));
 }
 

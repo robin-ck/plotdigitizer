@@ -3,7 +3,7 @@
 
 import { api } from "./api.js";
 import { h, clear, busy, errorBox, setHeader, confirmDialog } from "./ui.js";
-import { SvgView, svgEl, dragFrom, pageImage, zoomControls, normBox, round2 } from "./svgview.js";
+import { SvgView, svgEl, dragFrom, pageImage, zoomControls, normBox, round2, isTyping as isTypingTarget } from "./svgview.js";
 import { markerIcon, SHAPES } from "./markers.js";
 import { go, routes } from "./router.js";
 
@@ -166,11 +166,11 @@ export async function render(app, { token, num, query }) {
   const pageSel = h("select", { class: "text", id: "page-sel", style: { width: "auto" }, "aria-label": "Page" });
   for (let i = 1; i <= session.n_pages; i++) pageSel.appendChild(h("option", { value: i, selected: i === page }, `Page ${i}`));
   const toolBtns = {};
-  const mkTool = (tool, label) => (toolBtns[tool] = h("button", { type: "button", class: "btn", "aria-pressed": "false", onclick: () => setTool(st.tool === tool ? "select" : tool) }, label));
+  const mkTool = (tool, label) => (toolBtns[tool] = h("button", { type: "button", class: "btn", "aria-pressed": "false", onclick: () => setTool(tool) }, label));
   const scaleLabel = h("span", { class: "small muted" });
   const toolbar = h("div", { class: "toolbar", role: "toolbar", "aria-label": "Drawing tools" },
     h("a", { href: routes.session(token), class: "btn" }, "← Figures"),
-    mkTool("panel", "Draw panel box"), mkTool("legend", "Draw legend box"), mkTool("inset", "Draw inset"),
+    mkTool("select", "Select / move"), mkTool("panel", "Draw panel box"), mkTool("legend", "Draw legend box"), mkTool("inset", "Draw inset"),
     h("span", { class: "spacer" }),
     h("label", { for: "page-sel", class: "small muted" }, "Page"), pageSel, scaleLabel);
   const help = h("p", { class: "stage-help", "aria-live": "polite" });
@@ -230,6 +230,13 @@ export async function render(app, { token, num, query }) {
       inset: `Drag around an inset plot inside panel ${p ? p.id : ""}.`,
     }[t];
   }
+
+  // Escape returns to select/move (the tool buttons do not toggle off)
+  const onKey = (e) => {
+    if (!svg.isConnected) { document.removeEventListener("keydown", onKey); return; }
+    if (e.key === "Escape" && !isTypingTarget(e.target)) setTool("select");
+  };
+  document.addEventListener("keydown", onKey);
 
   svg.addEventListener("pointerdown", (e) => {
     if (e.defaultPrevented || st.tool === "select" || e.button !== 0) return;
