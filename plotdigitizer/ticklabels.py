@@ -182,11 +182,30 @@ def _runs(mask_1d, max_gap: int) -> list[tuple[int, int]]:
     return [(a, b) for a, b in out]
 
 
+def _drop_strokes(ink: np.ndarray) -> np.ndarray:
+    """Remove thin lines spanning >= 80% of the window height (vertical) or
+    width (horizontal); glyphs are never that long and thin."""
+    ink = ink.copy()
+    H, W = ink.shape
+    for axis, n, length in ((0, W, H), (1, H, W)):
+        full = ink.sum(axis=axis) >= 0.8 * length
+        for a, b in _runs(full, 0):
+            if b - a + 1 <= max(2, 0.03 * n):
+                a, b = max(0, a - 1), min(n - 1, b + 1)   # anti-aliased edges
+                if axis == 0:
+                    ink[:, a:b + 1] = False
+                else:
+                    ink[a:b + 1, :] = False
+    return ink
+
+
 def _isolate(ink: np.ndarray, orient: str, near: str) -> tuple[int, int, int, int] | None:
     """Box (r0, r1, c0, c1) of the label ink nearest the axis inside a window.
 
     Text further out (an axis title, a neighbouring label) is cut off at the
-    first clear gap."""
+    first clear gap. Long thin strokes across the window (a frame line, an
+    inward tick, a grid line) are removed first."""
+    ink = _drop_strokes(ink)
     rows = _runs(ink.any(axis=1), 0)
     if not rows:
         return None
@@ -245,32 +264,57 @@ def _superscript_split(ink: np.ndarray) -> int | None:
     return None
 
 
-def _ocr_img(sub: np.ndarray) -> tuple[str, float]:
+# (glyph height px, binarize, page segmentation mode). Single short numbers
+# are fragile in Tesseract (a lone "0" or "5" comes out empty or as another
+# digit depending on size and version), so several renderings vote.
+_OCR_VARIANTS = [(32, False, 7), (32, False, 10), (24, True, 7), (40, False, 7), (32, True, 10), (24, False, 10),
+                 (40, True, 10), (28, False, 7), (36, True, 7), (28, True, 10), (36, False, 10), (24, False, 7)]
+
+
+def _ocr_once(sub: np.ndarray, height: int, binarize: bool, psm: int) -> tuple[str, float]:
     import pytesseract
     from PIL import Image, ImageOps
 
+    if binarize:
+        sub = np.where(sub < 140, 0, 255).astype(np.uint8)
+    img = Image.fromarray(np.ascontiguousarray(sub))
+    img = img.resize((max(1, round(img.width * height / img.height)), height), Image.LANCZOS)
+    img = ImageOps.expand(img, border=height // 2, fill=255)
+    wl = "-c tessedit_char_whitelist=0123456789.,-"
+    d = pytesseract.image_to_data(img, config=f"--psm {psm} {wl}", output_type=pytesseract.Output.DICT)
+    words = [(w.strip(), float(c)) for w, c in zip(d["text"], d["conf"]) if (w or "").strip() and float(c) >= 0]
+    if not words:
+        return "", 0.0
+    return "".join(w for w, _ in words), min(c for _, c in words)
+
+
+def _ocr_img(sub: np.ndarray) -> tuple[str, float]:
+    """Read one number by majority vote over ``_OCR_VARIANTS``.
+
+    Stops early once one value has 3 votes and no rival, or when the first 4
+    renderings give no number at all (not a label). The confidence is the
+    best agreeing confidence scaled by the share of votes."""
     r = np.flatnonzero((sub < 140).any(axis=1))
     c = np.flatnonzero((sub < 140).any(axis=0))
     if not len(r) or not len(c):
         return "", 0.0
     sub = sub[r[0]:r[-1] + 1, c[0]:c[-1] + 1]
-    img = Image.fromarray(np.ascontiguousarray(sub))
-    if img.height < 30:   # Tesseract wants roughly 30+ px glyphs
-        f = 48 / img.height
-        img = img.resize((max(1, int(img.width * f)), 48), Image.LANCZOS)
-    img = ImageOps.expand(img, border=max(10, img.height // 2), fill=255)
-    wl = "-c tessedit_char_whitelist=0123456789.,-"
-    best = ("", 0.0)
-    # single line first; single character for lone digits Tesseract skips in line mode
-    order = (10, 7) if img.width < 0.9 * img.height else (7, 8, 10)
-    for psm in order:
-        d = pytesseract.image_to_data(img, config=f"--psm {psm} {wl}", output_type=pytesseract.Output.DICT)
-        words = [(w.strip(), float(c)) for w, c in zip(d["text"], d["conf"]) if (w or "").strip() and float(c) >= 0]
-        txt = "".join(w for w, _ in words)
-        if words and parse_number(txt) is not None:
-            best = (txt, min(c for _, c in words))
+    votes: dict[float, list[tuple[str, float]]] = {}
+    for k, var in enumerate(_OCR_VARIANTS):
+        txt, conf = _ocr_once(sub, *var)
+        v = parse_number(txt)
+        if v is not None:
+            votes.setdefault(v, []).append((txt, conf))
+        if not votes and k >= 3:
             break
-    return best
+        if len(votes) == 1 and len(next(iter(votes.values()))) >= 3:
+            break
+    if not votes:
+        return "", 0.0
+    n = sum(len(x) for x in votes.values())
+    top = max(votes.values(), key=lambda x: (len(x), max(c for _, c in x)))
+    txt, conf = max(top, key=lambda t: t[1])
+    return txt, conf * len(top) / n
 
 
 def ocr_tokens(page, axes: dict, zoom: float = 6.0, reach: float = 28.0) -> list[Token]:
@@ -548,9 +592,11 @@ def read_tick_labels(page, bbox: Sequence[float], axes: dict, exclude: Sequence[
                 for c in coords(o):
                     toks = keep(ocr_tokens(page, {o: dict(ax, coord=c)}))
                     cands.append(dict(read_axis_labels(toks, o, c, ax["major"]), label_coord=c))
-                    if n_read(cands[-1]) >= 2:
+                    if n_read(cands[-1]) == len(ax["major"]) and cands[-1].get("suggested") is not None:
                         break
-                r2 = best(cands)
+                # misreads inside the plot can outnumber the real labels: an
+                # evenly spaced reading wins over a longer inconsistent one
+                r2 = max(cands, key=lambda r: (r.get("suggested") is not None, n_read(r)))
                 if ocr == "always" or n_read(r2) > n_read(r):
                     r = r2
             elif r.get("suggested") is None:

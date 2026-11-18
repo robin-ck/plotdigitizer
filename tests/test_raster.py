@@ -90,3 +90,5 @@ def test_ocr_reads_raster_tick_labels(rasterfig):
     for o in ("x", "y"):
         assert res[o]["source"] == "ocr"
         assert sorted(res[o]["suggested"]) == pytest.approx(pc[o]["ticks"]), (o, res[o])
+        # every label read directly, none filled in from the spacing
+        assert None not in res[o]["values"] and not res[o]["inferred"], (o, res[o])
