@@ -16,16 +16,18 @@ dependencies = [
 
 [project.optional-dependencies]
 raster = ["opencv-python-headless"]
-test = ["pytest"]
+web = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9"]
+test = ["pytest", "httpx"]
 
 [project.scripts]
 plotdigitizer = "plotdigitizer.cli:main"
 
 [tool.setuptools]
-packages = ["plotdigitizer"]
+packages = ["plotdigitizer", "plotdigitizer.web"]
 
 [tool.setuptools.package-data]
 plotdigitizer = ["prompts/*.md"]
+"plotdigitizer.web" = ["static/*", "static/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

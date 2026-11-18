@@ -9,13 +9,13 @@
 - [x] 1.6 Tests for 1.1–1.5 on synthetic PDFs; existing tests stay green
 
 ## 2. Server
-- [ ] 2.1 `web` extra in `pyproject.toml`; `plotdigitizer/web/` package; `plotdigitizer serve` CLI command
-- [ ] 2.2 Config from env vars (design.md)
-- [ ] 2.3 Session store: create, load by token, expiry, cleanup loop, disk cap
-- [ ] 2.4 Job manager: subprocess per job, hard timeout, concurrency cap, job status endpoint
-- [ ] 2.5 Rate limiter per IP with trusted-proxy handling
-- [ ] 2.6 Endpoints: upload, figures, page image, detect ticks, save card + extract, get panel state, edits, validate, CSV downloads
-- [ ] 2.7 API tests (FastAPI TestClient) for every endpoint, limits, isolation and expiry
+- [x] 2.1 `web` extra in `pyproject.toml`; `plotdigitizer/web/` package; `plotdigitizer serve` CLI command
+- [x] 2.2 Config from env vars (design.md)
+- [x] 2.3 Session store: create, load by token, expiry, cleanup loop, disk cap
+- [x] 2.4 Job manager: subprocess per job, hard timeout, concurrency cap (requests wait for the job; no status endpoint needed, see api.md)
+- [x] 2.5 Rate limiter per IP with trusted-proxy handling
+- [x] 2.6 Endpoints: upload, figures, page image, detect ticks, save card + extract, get panel state, edits, validate, CSV downloads
+- [x] 2.7 API tests (FastAPI TestClient) for every endpoint, limits, isolation and expiry
 
 ## 3. Front end
 - [ ] 3.1 Shell, routing between the three screens, session link display

@@ -4,6 +4,7 @@
     plotdigitizer digitize <pdf> --card figure_card.json [--out out]
     plotdigitizer reimport <corrected_wpd.json|.tar> <figdir> [--panel b]
     plotdigitizer collect <out>
+    plotdigitizer serve [--host 127.0.0.1] [--port 8000]
 """
 
 from __future__ import annotations
@@ -34,7 +35,15 @@ def main(argv=None) -> int:
     c = sub.add_parser("collect", help="combine all points.csv into one CSV")
     c.add_argument("out")
 
+    w = sub.add_parser("serve", help="run the web interface (needs the 'web' extra)")
+    w.add_argument("--host", default="127.0.0.1")
+    w.add_argument("--port", type=int, default=8000)
+
     args = ap.parse_args(argv)
+    if args.cmd == "serve":
+        import uvicorn
+        uvicorn.run("plotdigitizer.web.app:app", host=args.host, port=args.port, proxy_headers=False)
+        return 0
     if args.cmd == "list-figures":
         from .find_figures import find_figures
         figs = find_figures(args.pdf)
