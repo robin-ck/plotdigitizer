@@ -45,6 +45,8 @@ Output per figure in `out/<citekey>/fig<N>/`: `points.csv`, `points_sheet.csv`
   with a marker. Without a legend box the card's `marker`/`filled`/`color` are used.
 * `insets[]`: own `bbox_pt` and ticks; merged with main points over `merge_on`
   (default `y`) within `merge_tol` (default 0.2); inset value preferred.
+* `coord_grid_pt`: PDF coordinate grid (e.g. 0.66) that sets the reading
+  uncertainty when it cannot be detected (real journal PDFs).
 * optional: `marker_size_pt`, `expected_count`, `bands`, machine-checkable
   `text_checks[].check`.
 
@@ -54,8 +56,10 @@ Output per figure in `out/<citekey>/fig<N>/`: `points.csv`, `points_sheet.csv`
 pytest
 ```
 
-The reference papers (Bastviken 2008, Blees 2014) are not included; see
-`tests/fixtures/README.md`. Tests use synthetic PDFs: a hand-written content
+The reference papers (Bastviken 2008, Blees 2014) are not included (copyright);
+see `tests/fixtures/README.md`. With `Bastviken2008.pdf` in place, Fig. 2 is
+extracted with all 418 points matching the reference sheet 1:1 (max deviation
+0.07 umol/L, 0.06 m). Blees (raster) waits for stage 5. Tests use synthetic PDFs: a hand-written content
 stream mimicking journal path topologies (0.66 pt grid, uneven ticks, several
 series per path, fill/stroke pairs, rays) and a matplotlib figure (inset,
 log axis, legends).

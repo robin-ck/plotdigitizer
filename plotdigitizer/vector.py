@@ -44,6 +44,9 @@ UNASSIGNED = "nicht zuordenbar"
 # Marker parser (reference code from the spec, extended as described above)
 # --------------------------------------------------------------------------
 
+RAY_PATTERNS = (("DDDDHH", "star"), ("DDDDVV", "star"), ("DDDD", "x"), ("HHVV", "plus"), ("VVHH", "plus"))
+
+
 def markers_of(d: dict, max_size: float = 5.0) -> list[tuple]:
     """Return markers ``(shape, cx, cy, w, h)`` found in one drawing dict."""
     out = []
@@ -166,7 +169,8 @@ def markers_of(d: dict, max_size: float = 5.0) -> list[tuple]:
             tok = "".join(dirc(s) for s in S)
             pos = 0
             while pos < len(tok):
-                hit = next(((p, n) for p, n in (("DDDDHH", "star"), ("DDDD", "x"), ("HHVV", "plus"))
+                # Bastviken draws star as DDDDVV and plus as VVHH in the legend
+                hit = next(((p, n) for p, n in RAY_PATTERNS
                             if tok.startswith(p, pos)), None)
                 if not hit:
                     pos += 1
@@ -286,8 +290,10 @@ def find_axis(segs: list[tuple], bbox: Sequence[float], orient: str, n_values: i
     for s in segs:
         dx, dy = abs(s[2] - s[0]), abs(s[3] - s[1])
         length = max(dx, dy)
-        horiz = dy < tol and dx > tol
-        vert = dx < tol and dy > tol
+        # journal PDFs draw axes/ticks slightly slanted (Bastviken: up to 0.15 pt over a
+        # 1.5 pt tick, 0.16 pt over a 124 pt axis), so the tolerance is relative
+        horiz = dx > tol and dy < max(tol, 0.15 * dx)
+        vert = dy > tol and dx < max(tol, 0.15 * dy)
         if orient == "x":
             if horiz and length >= min_frac * span:
                 lines.append(AxisLine("x", (s[1] + s[3]) / 2, min(s[0], s[2]), max(s[0], s[2])))
@@ -522,6 +528,9 @@ def quantisation_step(values: Sequence[float]) -> float:
         k = d / q
         if (np.abs(k - np.round(k)) < 0.1).mean() >= 0.98:
             return q
+    # Real journal PDFs (Bastviken 2008) show no clean grid in marker centres or
+    # path vertices, so detection returns 0 there; the Figure Card can then set
+    # ``coord_grid_pt`` per panel/inset.
     return 0.0
 
 
@@ -585,7 +594,8 @@ def size_range(card_range, sigs) -> tuple[float, float]:
 
 
 def extract_axes_block(drawings, bbox, axis_x, axis_y, sigs, size_rng, exclude=(), log=None,
-                       label="", source="Hauptpanel", series_lines=None, max_size=None):
+                       label="", source="Hauptpanel", series_lines=None, max_size=None,
+                       coord_grid_pt=None):
     """Extract all data markers of one axes block (main panel or inset)."""
     segs = stroke_segments(drawings, bbox, exclude=exclude)
     calx, linex = calibrate_axis(segs, bbox, axis_x, "x", log, label)
@@ -618,8 +628,11 @@ def extract_axes_block(drawings, bbox, axis_x, axis_y, sigs, size_rng, exclude=(
     # tick positions and axis lines are drawn on the same grid
     coords_x += list(calx.positions) + ([liney.coord] if liney else [])
     coords_y += list(caly.positions) + ([linex.coord] if linex else [])
-    qx = quantisation_step(coords_x)
-    qy = quantisation_step(coords_y)
+    if coord_grid_pt:
+        qx = qy = float(coord_grid_pt)  # from the Figure Card
+    else:
+        qx = quantisation_step(coords_x)
+        qy = quantisation_step(coords_y)
     floor = 0.01  # pt, numerical floor when coordinates look continuous
     lines = polylines(drawings, bbox, exclude=exclude)
     verts = np.vstack(lines) if lines else np.zeros((0, 2))
@@ -679,12 +692,16 @@ def extract_panel(drawings: Sequence[dict], panel_card: dict, log=None) -> dict:
     legend_box = (panel_card.get("legend") or {}).get("bbox_pt")
     legend_markers = collect(drawings, legend_box, max_size=12.0) if legend_box else None
     if legend_markers is not None:
-        legend_markers = [m for m in legend_markers if max(m["w"], m["h"]) <= 12.0]
+        # legend numerals are often glyph paths that parse as circles/plus signs;
+        # the panel's marker size range filters them out
+        lo, hi = panel_card.get("marker_size_pt") or (0.0, 12.0)
+        legend_markers = [m for m in legend_markers if lo <= m["w"] <= hi and lo <= m["h"] <= hi]
     sigs = series_signatures(panel_card, legend_markers, log, pid)
     rng = size_range(panel_card.get("marker_size_pt"), sigs)
     exclude = list(inset_boxes) + ([legend_box] if legend_box else [])
     main = extract_axes_block(drawings, bbox, panel_card["x"], panel_card["y"], sigs, rng,
-                              exclude=exclude, log=log, label=pid, source="Hauptpanel")
+                              exclude=exclude, log=log, label=pid, source="Hauptpanel",
+                              coord_grid_pt=panel_card.get("coord_grid_pt"))
     blocks = {"main": main}
     for ins in insets:
         iid = f"{pid}:{ins['id']}"
@@ -698,7 +715,8 @@ def extract_panel(drawings: Sequence[dict], panel_card: dict, log=None) -> dict:
             irng = (0.4 * rng[0], rng[1])
         iexcl = [legend_box] if legend_box else []
         blk = extract_axes_block(drawings, ins["bbox_pt"], ins["x"], ins["y"], isigs, irng,
-                                 exclude=[e for e in iexcl if e], log=log, label=iid, source="Inset")
+                                 exclude=[e for e in iexcl if e], log=log, label=iid, source="Inset",
+                                 coord_grid_pt=ins.get("coord_grid_pt", panel_card.get("coord_grid_pt")))
         blk["merge_on"] = ins.get("merge_on", "y")
         blk["merge_tol"] = float(ins.get("merge_tol", 0.2))
         blocks[f"inset:{ins['id']}"] = blk

@@ -14,7 +14,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
-CAPTION_RE = re.compile(r"^\s*(Fig\.?|Figure|Abb\.?|Abbildung)\s*(\d+)", re.IGNORECASE)
+# number must be followed by a caption delimiter, not ")" or "," as in body text
+# ("Figure 2) were at the high end", Bastviken 2008 p. 8)
+CAPTION_RE = re.compile(r"^\s*(Fig\.?|Figure|Abb\.?|Abbildung)\s*(\d+)(?=[a-z]?\s*[.:|]|\s+[A-Z(])", re.IGNORECASE)
 
 
 def find_captions(page) -> list[dict]:

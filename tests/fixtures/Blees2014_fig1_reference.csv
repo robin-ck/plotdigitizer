@@ -1,0 +1,108 @@
+panel,variable,unit,campaign,depth_m,value,confidence,px_x,px_y
+b,CH4,µmol/L,Aug 09,189.8,8.0,tief,357.0,492.5
+b,CH4,µmol/L,Aug 09,209.4,27.2,mittel,375.0,531.5
+b,CH4,µmol/L,Aug 09,269.6,35.8,gut,383.0,651.5
+b,CH4,µmol/L,Aug 09,282.7,41.1,gut,388.0,677.5
+b,CH4,µmol/L,Aug 10,144.9,5.9,gut,355.0,403.0
+b,CH4,µmol/L,Aug 10,154.9,12.3,gut,361.0,423.0
+b,CH4,µmol/L,Aug 10,164.9,16.5,gut,365.0,443.0
+b,CH4,µmol/L,Aug 10,175.0,21.9,gut,370.0,463.0
+b,CH4,µmol/L,Aug 10,190.0,31.5,gut,379.0,493.0
+b,CH4,µmol/L,Aug 10,199.6,36.8,gut,384.0,512.0
+b,CH4,µmol/L,Aug 10,209.6,50.7,gut,397.0,532.0
+b,CH4,µmol/L,Aug 10,229.7,62.5,gut,408.0,572.0
+b,CH4,µmol/L,Aug 10,249.8,74.2,gut,419.0,612.0
+b,CH4,µmol/L,Aug 10,269.9,94.5,gut,438.0,652.0
+b,CH4,µmol/L,Aug 10,282.4,146.8,gut,487.0,677.0
+b,CH4,µmol/L,Jan 10,145.1,5.3,gut,354.5,403.5
+b,CH4,µmol/L,Jan 10,155.1,12.8,gut,361.5,423.5
+b,CH4,µmol/L,Jan 10,165.2,17.1,gut,365.5,443.5
+b,CH4,µmol/L,Jan 10,175.2,21.4,gut,369.5,463.5
+b,CH4,µmol/L,Jan 10,189.8,25.6,gut,373.5,492.5
+b,CH4,µmol/L,Jan 10,199.8,33.1,gut,380.5,512.5
+b,CH4,µmol/L,Jan 10,209.9,42.7,gut,389.5,532.5
+b,CH4,µmol/L,Jan 10,230.0,57.1,gut,403.0,572.5
+b,CH4,µmol/L,Jan 10,250.0,71.5,gut,416.5,612.5
+b,CH4,µmol/L,Jan 10,269.6,101.4,gut,444.5,651.5
+b,CH4,µmol/L,Jan 10,282.7,131.3,gut,472.5,677.5
+b,CH4,µmol/L,Mar 09,199.6,10.7,gut,359.5,512.0
+b,CH4,µmol/L,Mar 09,224.7,19.2,gut,367.5,562.0
+b,CH4,µmol/L,Mar 09,249.8,29.4,gut,377.0,612.0
+b,CH4,µmol/L,Mar 09,254.8,35.2,gut,382.5,622.0
+b,CH4,µmol/L,Mar 09,259.8,34.2,gut,381.5,632.0
+b,CH4,µmol/L,Mar 09,264.8,33.1,gut,380.5,642.0
+b,CH4,µmol/L,Mar 09,282.4,45.9,gut,392.5,677.0
+b,CH4,µmol/L,Oct 09,155.1,5.3,mittel,354.5,423.5
+b,CH4,µmol/L,Oct 09,169.7,9.6,gut,358.5,452.5
+b,CH4,µmol/L,Oct 09,189.8,14.9,gut,363.5,492.5
+b,CH4,µmol/L,Oct 09,199.8,20.3,gut,368.5,512.5
+b,CH4,µmol/L,Oct 09,209.9,21.4,gut,369.5,532.5
+b,CH4,µmol/L,Oct 09,219.9,27.8,gut,375.5,552.5
+b,CH4,µmol/L,Oct 09,230.0,28.8,gut,376.5,572.5
+b,CH4,µmol/L,Oct 09,240.0,34.2,gut,381.5,592.5
+b,CH4,µmol/L,Oct 09,250.0,39.5,gut,386.5,612.5
+b,CH4,µmol/L,Oct 09,269.6,52.3,gut,398.5,651.5
+b,CH4,µmol/L,Oct 09,282.7,99.3,gut,442.5,677.5
+c,d13C-CH4,‰ VPDB,Aug 10,134.8,-46.9,gut,692.0,383.0
+c,d13C-CH4,‰ VPDB,Aug 10,144.9,-56.4,gut,659.0,403.0
+c,d13C-CH4,‰ VPDB,Aug 10,154.9,-60.4,gut,645.0,423.0
+c,d13C-CH4,‰ VPDB,Aug 10,164.9,-63.3,gut,635.0,443.0
+c,d13C-CH4,‰ VPDB,Aug 10,175.0,-65.6,gut,627.0,463.0
+c,d13C-CH4,‰ VPDB,Aug 10,190.0,-66.2,gut,625.0,493.0
+c,d13C-CH4,‰ VPDB,Aug 10,199.6,-67.4,gut,621.0,512.0
+c,d13C-CH4,‰ VPDB,Aug 10,209.6,-66.5,gut,624.0,532.0
+c,d13C-CH4,‰ VPDB,Aug 10,229.7,-67.1,gut,622.0,572.0
+c,d13C-CH4,‰ VPDB,Jan 10,135.1,-42.1,gut,708.5,383.5
+c,d13C-CH4,‰ VPDB,Jan 10,145.1,-57.7,mittel,654.5,403.5
+c,d13C-CH4,‰ VPDB,Jan 10,154.6,-61.2,gut,642.5,422.5
+c,d13C-CH4,‰ VPDB,Jan 10,165.2,-58.0,gut,653.5,443.5
+c,d13C-CH4,‰ VPDB,Jan 10,175.2,-58.8,gut,650.5,463.5
+c,d13C-CH4,‰ VPDB,Jan 10,189.8,-60.6,gut,644.5,492.5
+c,d13C-CH4,‰ VPDB,Jan 10,200.3,-65.8,gut,626.5,513.5
+c,d13C-CH4,‰ VPDB,Jan 10,209.9,-64.3,gut,631.5,532.5
+c,d13C-CH4,‰ VPDB,Jan 10,230.0,-64.3,gut,631.5,572.5
+c,d13C-CH4,‰ VPDB,Jan 10,250.0,-66.6,gut,623.5,612.5
+c,d13C-CH4,‰ VPDB,Jan 10,270.1,-65.8,gut,626.5,652.5
+c,d13C-CH4,‰ VPDB,Jan 10,282.7,-66.9,mittel,622.5,677.5
+c,d13C-CH4,‰ VPDB,Oct 09,0.5,-50.2,gut,680.5,115.5
+c,d13C-CH4,‰ VPDB,Oct 09,6.0,-60.3,gut,645.5,126.5
+c,d13C-CH4,‰ VPDB,Oct 09,12.1,-58.3,gut,652.5,138.5
+c,d13C-CH4,‰ VPDB,Oct 09,99.9,-30.3,gut,749.5,313.5
+c,d13C-CH4,‰ VPDB,Oct 09,135.1,-44.7,tief (teilw. verdeckt),699.5,383.5
+c,d13C-CH4,‰ VPDB,Oct 09,145.1,-52.8,gut,671.5,403.5
+c,d13C-CH4,‰ VPDB,Oct 09,155.1,-59.4,gut,648.5,423.5
+c,d13C-CH4,‰ VPDB,Oct 09,169.7,-61.7,gut,640.5,452.5
+c,d13C-CH4,‰ VPDB,Oct 09,189.8,-64.6,gut,630.5,492.5
+c,d13C-CH4,‰ VPDB,Oct 09,199.8,-66.9,mittel,622.5,512.5
+c,d13C-CH4,‰ VPDB,Oct 09,209.9,-66.3,gut,624.5,532.5
+c,d13C-CH4,‰ VPDB,Oct 09,219.9,-67.8,gut,619.5,552.5
+c,d13C-CH4,‰ VPDB,Oct 09,230.0,-67.8,gut,619.5,572.5
+c,d13C-CH4,‰ VPDB,Oct 09,240.0,-69.5,gut,613.5,592.5
+c,d13C-CH4,‰ VPDB,Oct 09,250.0,-69.8,mittel,612.5,612.5
+c,d13C-CH4,‰ VPDB,Oct 09,269.6,-69.5,gut,613.5,651.5
+c,d13C-CH4,‰ VPDB,Oct 09,282.7,-70.4,gut,610.5,677.5
+d,rate (AOM?),µmol/L/d,Aug 10,134.8,1.21,gut,862.0,383.0
+d,rate (AOM?),µmol/L/d,Aug 10,144.9,1.93,gut,904.0,403.0
+d,rate (AOM?),µmol/L/d,Aug 10,154.9,1.45,gut,876.0,423.0
+d,rate (AOM?),µmol/L/d,Aug 10,164.9,1.57,gut,883.0,443.0
+d,rate (AOM?),µmol/L/d,Aug 10,165.9,0.26,mittel,807.0,445.0
+d,rate (AOM?),µmol/L/d,Aug 10,175.0,2.66,gut,946.0,463.0
+d,rate (AOM?),µmol/L/d,Aug 10,190.0,1.71,gut,891.0,493.0
+d,rate (AOM?),µmol/L/d,Aug 10,199.6,1.14,gut,858.0,512.0
+d,rate (AOM?),µmol/L/d,Aug 10,209.6,0.81,gut,839.0,532.0
+d,rate (AOM?),µmol/L/d,Aug 10,229.7,0.79,gut,838.0,572.0
+d,rate (AOM?),µmol/L/d,Aug 10,249.8,0.69,gut,832.0,612.0
+d,rate (AOM?),µmol/L/d,Aug 10,269.9,0.24,gut,806.0,652.0
+d,rate (AOM?),µmol/L/d,Aug 10,283.2,0.01,mittel,792.5,678.5
+d,rate (AOM?),µmol/L/d,Jan 10,135.1,0.08,gut,796.5,383.5
+d,rate (AOM?),µmol/L/d,Jan 10,144.9,1.08,mittel,854.5,403.0
+d,rate (AOM?),µmol/L/d,Jan 10,155.1,0.28,gut,808.5,423.5
+d,rate (AOM?),µmol/L/d,Jan 10,165.2,0.09,gut,797.5,443.5
+d,rate (AOM?),µmol/L/d,Jan 10,175.2,1.49,mittel,878.5,463.5
+d,rate (AOM?),µmol/L/d,Jan 10,189.8,0.51,gut,821.5,492.5
+d,rate (AOM?),µmol/L/d,Jan 10,200.6,0.85,mittel,841.5,514.0
+d,rate (AOM?),µmol/L/d,Jan 10,209.9,0.63,gut,828.5,532.5
+d,rate (AOM?),µmol/L/d,Jan 10,230.0,0.53,gut,822.5,572.5
+d,rate (AOM?),µmol/L/d,Jan 10,250.0,0.51,gut,821.5,612.5
+d,rate (AOM?),µmol/L/d,Jan 10,269.9,0.42,mittel,816.5,652.0
+d,rate (AOM?),µmol/L/d,Jan 10,282.7,0.3,gut,809.5,677.5

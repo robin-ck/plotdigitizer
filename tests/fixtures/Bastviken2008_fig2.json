@@ -1,0 +1,451 @@
+{
+ "paper": {
+  "citekey": "Bastviken2008",
+  "pdf": "Bastviken2008.pdf"
+ },
+ "figure": {
+  "number": "2",
+  "page_pdf": 6,
+  "kind": "vector",
+  "caption": "Figure 2. Measured methane concentration profiles in Paul, Peter, and Hummingbird. DOY shown in the legend ..."
+ },
+ "context": {
+  "sampling": "Paul, Peter and Hummingbird lakes, summer 2001 (DOY in legend)",
+  "source_refs": [
+   "p. 6, Figure 2 caption"
+  ]
+ },
+ "panels": [
+  {
+   "id": "Paul",
+   "bbox_pt": [
+    100,
+    93,
+    236,
+    223
+   ],
+   "legend": {
+    "bbox_pt": [
+     248,
+     68,
+     290,
+     248
+    ]
+   },
+   "x": {
+    "title": "CH4",
+    "unit": "µmol/L",
+    "scale": "linear",
+    "inverted": false,
+    "ticks": [
+     0,
+     100,
+     200,
+     300,
+     400
+    ]
+   },
+   "y": {
+    "title": "Depth",
+    "unit": "m",
+    "scale": "linear",
+    "inverted": true,
+    "ticks": [
+     0,
+     2,
+     4,
+     6,
+     8,
+     10,
+     12
+    ]
+   },
+   "marker_size_pt": [
+    3.4,
+    4.6
+   ],
+   "insets": [
+    {
+     "id": "Paul_inset",
+     "bbox_pt": [
+      162,
+      112,
+      222,
+      163
+     ],
+     "marker_size_pt": [
+      2.0,
+      3.4
+     ],
+     "x": {
+      "title": "CH4",
+      "unit": "µmol/L",
+      "scale": "linear",
+      "inverted": false,
+      "ticks": [
+       0,
+       2,
+       4
+      ]
+     },
+     "y": {
+      "title": "Depth",
+      "unit": "m",
+      "scale": "linear",
+      "inverted": true,
+      "ticks": [
+       0,
+       2,
+       4,
+       6
+      ]
+     }
+    }
+   ],
+   "series": [
+    {
+     "label": "155",
+     "meaning": "DOY 155 (2001)",
+     "marker": "square",
+     "filled": true,
+     "line": "solid"
+    },
+    {
+     "label": "162",
+     "meaning": "DOY 162 (2001)",
+     "marker": "diamond",
+     "filled": true,
+     "line": "solid"
+    },
+    {
+     "label": "169",
+     "meaning": "DOY 169 (2001)",
+     "marker": "triangle",
+     "filled": true,
+     "line": "solid"
+    },
+    {
+     "label": "176",
+     "meaning": "DOY 176 (2001)",
+     "marker": "circle",
+     "filled": true,
+     "line": "solid"
+    },
+    {
+     "label": "183",
+     "meaning": "DOY 183 (2001)",
+     "marker": "square",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "197",
+     "meaning": "DOY 197 (2001)",
+     "marker": "diamond",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "204",
+     "meaning": "DOY 204 (2001)",
+     "marker": "triangle",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "211",
+     "meaning": "DOY 211 (2001)",
+     "marker": "circle",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "218",
+     "meaning": "DOY 218 (2001)",
+     "marker": "x",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "225",
+     "meaning": "DOY 225 (2001)",
+     "marker": "star",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "239",
+     "meaning": "DOY 239 (2001)",
+     "marker": "plus",
+     "filled": false,
+     "line": "solid"
+    }
+   ],
+   "coord_grid_pt": 0.66
+  },
+  {
+   "id": "Peter",
+   "bbox_pt": [
+    100,
+    253,
+    230,
+    384
+   ],
+   "legend": {
+    "bbox_pt": [
+     248,
+     252,
+     290,
+     384
+    ]
+   },
+   "x": {
+    "title": "CH4",
+    "unit": "µmol/L",
+    "scale": "linear",
+    "inverted": false,
+    "ticks": [
+     0,
+     200,
+     400,
+     600,
+     800
+    ]
+   },
+   "y": {
+    "title": "Depth",
+    "unit": "m",
+    "scale": "linear",
+    "inverted": true,
+    "ticks": [
+     0,
+     2,
+     4,
+     6,
+     8,
+     10,
+     12,
+     14,
+     16,
+     18,
+     20
+    ]
+   },
+   "marker_size_pt": [
+    3.4,
+    4.6
+   ],
+   "insets": [
+    {
+     "id": "Peter_inset",
+     "bbox_pt": [
+      148,
+      272,
+      226,
+      313
+     ],
+     "marker_size_pt": [
+      2.0,
+      3.4
+     ],
+     "x": {
+      "title": "CH4",
+      "unit": "µmol/L",
+      "scale": "linear",
+      "inverted": false,
+      "ticks": [
+       0,
+       2,
+       4,
+       6,
+       8
+      ]
+     },
+     "y": {
+      "title": "Depth",
+      "unit": "m",
+      "scale": "linear",
+      "inverted": true,
+      "ticks": [
+       0,
+       2,
+       4,
+       6,
+       8
+      ]
+     }
+    }
+   ],
+   "series": [
+    {
+     "label": "156",
+     "meaning": "DOY 156 (2001)",
+     "marker": "square",
+     "filled": true,
+     "line": "solid"
+    },
+    {
+     "label": "163",
+     "meaning": "DOY 163 (2001)",
+     "marker": "diamond",
+     "filled": true,
+     "line": "solid"
+    },
+    {
+     "label": "170",
+     "meaning": "DOY 170 (2001)",
+     "marker": "triangle",
+     "filled": true,
+     "line": "solid"
+    },
+    {
+     "label": "177",
+     "meaning": "DOY 177 (2001)",
+     "marker": "circle",
+     "filled": true,
+     "line": "solid"
+    },
+    {
+     "label": "184",
+     "meaning": "DOY 184 (2001)",
+     "marker": "square",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "198",
+     "meaning": "DOY 198 (2001)",
+     "marker": "diamond",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "212",
+     "meaning": "DOY 212 (2001)",
+     "marker": "triangle",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "219",
+     "meaning": "DOY 219 (2001)",
+     "marker": "x",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "226",
+     "meaning": "DOY 226 (2001)",
+     "marker": "star",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "240",
+     "meaning": "DOY 240 (2001)",
+     "marker": "plus",
+     "filled": false,
+     "line": "solid"
+    }
+   ],
+   "coord_grid_pt": 0.66
+  },
+  {
+   "id": "Hummingbird",
+   "bbox_pt": [
+    100,
+    411,
+    232,
+    541
+   ],
+   "legend": {
+    "bbox_pt": [
+     248,
+     440,
+     290,
+     520
+    ]
+   },
+   "x": {
+    "title": "CH4",
+    "unit": "µmol/L",
+    "scale": "linear",
+    "inverted": false,
+    "ticks": [
+     0,
+     100,
+     200,
+     300,
+     400
+    ]
+   },
+   "y": {
+    "title": "Depth",
+    "unit": "m",
+    "scale": "linear",
+    "inverted": true,
+    "ticks": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8
+    ]
+   },
+   "marker_size_pt": [
+    3.4,
+    4.6
+   ],
+   "series": [
+    {
+     "label": "157",
+     "meaning": "DOY 157 (2001)",
+     "marker": "square",
+     "filled": true,
+     "line": "solid"
+    },
+    {
+     "label": "171",
+     "meaning": "DOY 171 (2001)",
+     "marker": "triangle",
+     "filled": true,
+     "line": "solid"
+    },
+    {
+     "label": "185",
+     "meaning": "DOY 185 (2001)",
+     "marker": "square",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "199",
+     "meaning": "DOY 199 (2001)",
+     "marker": "triangle",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "213",
+     "meaning": "DOY 213 (2001)",
+     "marker": "x",
+     "filled": false,
+     "line": "solid"
+    },
+    {
+     "label": "227",
+     "meaning": "DOY 227 (2001)",
+     "marker": "plus",
+     "filled": false,
+     "line": "solid"
+    }
+   ],
+   "coord_grid_pt": 0.66
+  }
+ ],
+ "open_questions": []
+}

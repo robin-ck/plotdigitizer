@@ -12,4 +12,5 @@ acceptance tests in `tests/test_reference_papers.py`, put here:
 | `Blees2014_fig1.json` | hand-written Figure Card incl. text_checks (p. 315, Results) |
 | `Blees2014_fig1_reference.csv` | reference values |
 
-PDFs are git-ignored (`tests/fixtures/*.pdf`).
+`Bastviken2008_fig2.json` and both reference CSVs are committed; only the PDFs
+are missing. PDFs are git-ignored (`tests/fixtures/*.pdf`).
