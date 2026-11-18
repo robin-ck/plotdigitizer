@@ -1,12 +1,12 @@
 # Tasks: add-web-interface
 
 ## 1. Core refactor (no web yet)
-- [ ] 1.1 Split `pipeline.digitize` into `extract(pdf, card) -> panels` and `finalize`; give points stable ids; CLI behaviour unchanged
-- [ ] 1.2 Add `run_start` events and append-mode logging for the web path (CLI keeps reset)
-- [ ] 1.3 Add `pipeline.apply_edits(state, edits, log)` (move/add/delete/set-value via `Calibration`/`inverse`), logging `manual_*`
-- [ ] 1.4 Add `pipeline.validate_figure(state, reasons, log)` and clearing on edit
-- [ ] 1.5 Expose `vector.detect_ticks(pdf, page, bbox)` returning tick positions per axis
-- [ ] 1.6 Tests for 1.1–1.5 on synthetic PDFs; existing tests stay green
+- [x] 1.1 Split `pipeline.digitize` into `extract(pdf, card) -> panels` and `finalize`; give points stable ids; CLI behaviour unchanged
+- [x] 1.2 Add `run_start` events and append-mode logging for the web path (CLI keeps reset)
+- [x] 1.3 Add `pipeline.apply_edits(state, edits, log)` (move/add/delete/set-value via `Calibration`/`inverse`), logging `manual_*`
+- [x] 1.4 Add `pipeline.validate_figure(state, reasons, log)` and clearing on edit
+- [x] 1.5 Expose `vector.detect_ticks(pdf, page, bbox)` returning tick positions per axis
+- [x] 1.6 Tests for 1.1–1.5 on synthetic PDFs; existing tests stay green
 
 ## 2. Server
 - [ ] 2.1 `web` extra in `pyproject.toml`; `plotdigitizer/web/` package; `plotdigitizer serve` CLI command
