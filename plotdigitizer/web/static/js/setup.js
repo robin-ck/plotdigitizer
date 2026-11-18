@@ -130,6 +130,29 @@ function tickMismatch(a, det) {
   return { text: `${n} ticks found, ${vals.length} values entered.`, cls: "good", block: false };
 }
 
+/** Fill an axis from the tick labels the server read (PDF text or OCR), unless
+ *  the person has typed values themselves. */
+function applyLabels(a, axDet) {
+  const L = axDet && axDet.labels;
+  a.labelInfo = L || null;
+  if (!L || !L.suggested) return;
+  if (a.ticks.trim() !== "" && !a.auto) return;
+  a.ticks = L.suggested.map((v) => String(v)).join(", ");
+  a.auto = true;
+  if (L.scale) a.log = L.scale === "log";
+  if (L.inverted !== null && L.inverted !== undefined) a.inverted = L.inverted;
+}
+
+/** {text, cls} describing where suggested tick values came from. */
+function labelNote(a) {
+  const L = a.labelInfo;
+  if (!L) return null;
+  if (!L.suggested) return L.message ? { text: `Tick labels: ${L.message}`, cls: "" } : null;
+  if (!a.auto) return null;
+  const src = L.source === "ocr" ? "Read from the figure image (OCR)" : "Read from the PDF text";
+  return { text: `${src}: ${L.message}`, cls: L.ok ? "good" : "warn" };
+}
+
 function nextPanelId(st) {
   const used = new Set(st.panels.map((p) => p.id));
   for (const c of "abcdefghijklmnopqrstuvwxyz") if (!used.has(c)) return c;
@@ -304,10 +327,23 @@ export async function render(app, { token, num, query }) {
     if (ax && !ax.error) {
       svgEl("line", { class: "ov-axis", x1: ax.lo, x2: ax.hi, y1: ax.coord, y2: ax.coord }, g);
       for (const x of ax.major) svgEl("circle", { class: "ov-tick", cx: x, cy: ax.coord, r }, g);
+      labelBoxes(ax, g);
     }
     if (ay && !ay.error) {
       svgEl("line", { class: "ov-axis", y1: ay.lo, y2: ay.hi, x1: ay.coord, x2: ay.coord }, g);
       for (const y of ay.major) svgEl("circle", { class: "ov-tick", cx: ay.coord, cy: y, r }, g);
+      labelBoxes(ay, g);
+    }
+  }
+
+  // outline each tick label that was read, so the person sees what was paired with which tick
+  function labelBoxes(axDet, g) {
+    const L = axDet.labels;
+    if (!L || !L.labels || L.source !== "pdf_text") return;
+    for (const lb of L.labels) {
+      if (!lb || !lb.bbox) continue;
+      const [x0, y0, x1, y1] = lb.bbox;
+      svgEl("rect", { class: "ov-label", x: x0 - 0.5, y: y0 - 0.5, width: x1 - x0 + 1, height: y1 - y0 + 1 }, g);
     }
   }
 
@@ -368,6 +404,8 @@ export async function render(app, { token, num, query }) {
       if (p.detSeq !== my) return;
       p.det = det;
       p.detErr = null;
+      applyLabels(p.x, det.x);
+      applyLabels(p.y, det.y);
     } catch (e) {
       if (p.detSeq !== my) return;
       p.det = null;
@@ -385,7 +423,7 @@ export async function render(app, { token, num, query }) {
     ins.detSeq = my;
     try {
       const det = await api.detect(token, { page: st.page, bbox: r2(ins.bbox), exclude: p.legend ? [r2(p.legend)] : [] });
-      if (ins.detSeq === my) ins.det = det;
+      if (ins.detSeq === my) { ins.det = det; applyLabels(ins.x, det.x); applyLabels(ins.y, det.y); }
     } catch (e) {
       if (ins.detSeq === my) ins.det = null;
     }
@@ -430,7 +468,9 @@ export async function render(app, { token, num, query }) {
     const tid = `${prefix}-ticks`;
     const note = h("span", { class: "tick-note", "data-note": key, id: `${tid}-note` });
     const ticks = h("input", { id: tid, value: a.ticks, placeholder: "e.g. 0, 50, 100, 150", inputmode: "decimal", "aria-describedby": `${tid}-note` });
-    ticks.addEventListener("input", () => { a.ticks = ticks.value; updateValidity(); });
+    ticks.addEventListener("input", () => { a.ticks = ticks.value; a.auto = false; updateValidity(); });
+    const ln = labelNote(a);
+    const srcNote = ln ? h("span", { class: `tick-note src ${ln.cls}` }, ln.text) : null;
     const nFound = det && det[a.orient] && !det[a.orient].error ? ` (${det[a.orient].major.length} ticks found)` : "";
     const rows = [];
     if (full) {
@@ -441,7 +481,7 @@ export async function render(app, { token, num, query }) {
         h("div", { class: "field" }, h("label", { for: `${prefix}-unit` }, "Unit"), u)));
     }
     rows.push(h("div", { class: "field", "data-field": key },
-      h("label", { for: tid }, `Tick values${nFound}`), ticks, note));
+      h("label", { for: tid }, `Tick values${nFound}`), ticks, note, srcNote));
     const logBox = h("input", { type: "checkbox", id: `${prefix}-log`, checked: a.log, onchange: (e) => { a.log = e.target.checked; updateValidity(); } });
     const invBox = h("input", { type: "checkbox", id: `${prefix}-inv`, checked: a.inverted, onchange: (e) => (a.inverted = e.target.checked) });
     rows.push(h("div", { class: "row" },

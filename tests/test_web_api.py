@@ -96,6 +96,7 @@ def test_detect_and_legend(session):
     r = c.post(f"/api/s/{s['token']}/detect", json={"page": 1, "bbox": pc["bbox_pt"], "exclude": [pc["legend"]["bbox_pt"]]})
     assert r.status_code == 200, r.text
     assert len(r.json()["x"]["major"]) == 5 and len(r.json()["y"]["major"]) == 5
+    assert "labels" in r.json()["x"] and "labels" in r.json()["y"]   # journal PDF: no label text
     r = c.post(f"/api/s/{s['token']}/legend", json={"page": 1, "bbox": pc["legend"]["bbox_pt"]})
     assert [m["marker"] for m in r.json()] == [x["marker"] for x in pc["series"]]
     assert c.post(f"/api/s/{s['token']}/detect", json={"page": 1, "bbox": [1, 2]}).status_code == 400

@@ -201,6 +201,9 @@ a.fig-card:focus-visible { border-color: var(--primary); }
 .tick-note { font-weight: 400; }
 .tick-note.bad { color: var(--err-text); font-weight: 600; }
 .tick-note.good { color: var(--teal); }
+.tick-note.src { display: block; margin-top: 2px; }
+.tick-note.warn { color: #92400e; }
+.ov-label { fill: none; stroke: var(--teal); stroke-dasharray: 2 1.5; vector-effect: non-scaling-stroke; stroke-width: 1; }
 .inset-block { border-top: 1px dashed var(--border-strong); padding-top: 10px; display: flex; flex-direction: column; gap: 10px; }
 .extract-bar { display: flex; flex-direction: column; gap: 8px; position: sticky; bottom: -20px; background: var(--surface); padding: 12px 0; }
 
