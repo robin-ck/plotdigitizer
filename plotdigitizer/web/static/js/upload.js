@@ -83,7 +83,10 @@ export async function renderUpload(app) {
       h("li", {}, "Set up a figure: draw a box around each plot panel and its legend, and type the axis tick values."),
       h("li", {}, "Review the extracted points next to the original, correct them, validate, and download the CSV.")),
     h("p", { class: "muted" }, "Each upload gets a private link. Nothing is shared between sessions, and everything is deleted after 7 days."),
-    last ? h("p", {}, h("a", { href: routes.session(last) }, "Return to your last session")) : null);
+    last ? h("p", {}, h("a", { href: routes.session(last) }, "Return to your last session")) : null,
+    h("p", { class: "small muted" },
+      h("a", { href: "https://patola-mountains.com/legal.html", target: "_blank", rel: "noopener" }, "Legal"), " · ",
+      h("a", { href: "https://patola-mountains.com/legal.html#digiplot", target: "_blank", rel: "noopener" }, "Privacy")));
   app.appendChild(h("div", { class: "upload-layout" }, uploadForm((s) => go(routes.session(s.token))), right));
 }
 
