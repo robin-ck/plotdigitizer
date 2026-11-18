@@ -229,6 +229,10 @@ body[data-tool="move"] .pt-hit, body[data-tool="move"] .pt { cursor: grab; }
 body[data-tool="delete"] .pt-hit, body[data-tool="delete"] .pt { cursor: not-allowed; }
 body[data-tool="add"] .stage svg { cursor: crosshair; }
 .crosshair { stroke: var(--primary); stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; stroke-width: 1.2; pointer-events: none; }
+.sel-box { fill: color-mix(in srgb, var(--primary) 10%, transparent); stroke: var(--primary); stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; stroke-width: 1.2; pointer-events: none; }
+body[data-tool="select"] .stage svg { cursor: crosshair; }
+body[data-tool="select"] .pt-hit, body[data-tool="select"] .pt { cursor: pointer; }
+table.points tbody tr { user-select: none; }
 .sel-ring { fill: none; stroke: var(--primary); vector-effect: non-scaling-stroke; stroke-width: 2.5; pointer-events: none; }
 .rp-axis { stroke: var(--muted); vector-effect: non-scaling-stroke; stroke-width: 1.2; }
 .rp-grid { stroke: #e6e9ed; vector-effect: non-scaling-stroke; stroke-width: 1; }

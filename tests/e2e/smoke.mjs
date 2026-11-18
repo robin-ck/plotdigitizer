@@ -90,6 +90,33 @@ try {
   await firstCell.press("Enter");
   await page.waitForFunction(async ([t, b]) => (await (await fetch(`/api/s/${t}/figures/2`)).json()).n_edits > b,
     [token, before]);
+
+  // multi-select: box-select a region, delete the selection, undo restores it
+  const nPts = async () => (await api(`/api/s/${token}/figures/2`)).panels[0].blocks.main.points.length;
+  const ptsNow = (await api(`/api/s/${token}/figures/2`)).panels[0].blocks.main.points;
+  const xs = ptsNow.map((q) => q.px).sort((a, b) => a - b);
+  const xm = xs[Math.floor(xs.length / 2)];
+  const inBoxN = ptsNow.filter((q) => q.px <= xm).length;
+  await page.getByRole("button", { name: "Box select" }).click();
+  const rSel = 'svg[aria-label^="Extracted points"]';
+  await drag(rSel, [pc.bbox_pt[0] - 2, pc.bbox_pt[1] - 2, xm + 0.01, pc.bbox_pt[3] + 2]);
+  await page.getByRole("button", { name: `Delete selected (${inBoxN})` }).waitFor();
+  if ((await page.locator("table.points tr.selected").count()) !== inBoxN) fail("table selection does not match box");
+  await page.getByRole("button", { name: /Delete selected/ }).click();
+  await page.getByText(`Points (${38 - inBoxN})`).waitFor();
+  if ((await nPts()) !== 38 - inBoxN) fail("group delete did not reach the server");
+  await page.getByRole("button", { name: /^Undo/ }).click();
+  await page.getByText("Points (38)").waitFor();
+  if ((await nPts()) !== 38) fail("undo did not restore deleted points");
+  // table: click + shift-click selects a range
+  const rows = page.locator("table.points tbody tr");
+  await page.keyboard.press("Escape");
+  await rows.nth(0).locator("td").first().click();
+  await rows.nth(4).locator("td").first().click({ modifiers: ["Shift"] });
+  if ((await page.locator("table.points tr.selected").count()) !== 5) fail("shift-click range selection failed");
+  if (shots) await page.screenshot({ path: `${shots}/3b-multiselect.png` });
+  await page.getByRole("button", { name: "Move", exact: true }).click();
+
   await page.getByRole("button", { name: /Mark validated/ }).click();
   await page.getByText(/Validated/).first().waitFor();
   rv = await api(`/api/s/${token}/figures/2`);
