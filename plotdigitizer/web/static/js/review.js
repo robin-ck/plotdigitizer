@@ -3,7 +3,7 @@
 
 import { api } from "./api.js";
 import { h, clear, fmt, fmtDateTime, errorBox, setHeader, modal } from "./ui.js";
-import { SvgView, svgEl, dragFrom, pageImage, zoomControls, inBox, isTyping } from "./svgview.js";
+import { SvgView, svgEl, dragFrom, pageImage, zoomControls, inBox, normBox, isTyping, isSpaceDown } from "./svgview.js";
 import { markerEl, markerIcon, seriesColor } from "./markers.js";
 import { routes } from "./router.js";
 
@@ -55,7 +55,7 @@ export async function render(app, { token, num, query }) {
   const st = {
     rv: first,
     pid: query.panel && first.panels.some((p) => p.id === query.panel) ? query.panel : first.panels[0]?.id,
-    sel: null, tool: "move", undo: [], busy: false, drag: null,
+    sel: new Set(), primary: null, tool: "move", undo: [], busy: false, drag: null, box: null,
   };
   const pageSize = session.page_sizes[first.page_pdf - 1] || [612, 792];
 
@@ -65,9 +65,10 @@ export async function render(app, { token, num, query }) {
   const mkTool = (t, label) => (toolBtn[t] = h("button", { type: "button", class: "btn", "aria-pressed": "false", onclick: () => setTool(t) }, label));
   const seriesSel = h("select", { class: "text", style: { width: "auto" }, "aria-label": "Series for new points", onchange: () => setTool("add") });
   const undoBtn = h("button", { type: "button", class: "btn", onclick: undo, title: "Undo (Ctrl+Z)" }, "Undo");
-  const delBtn = mkTool("delete", "Delete");
+  const delBtn = mkTool("delete", "Delete point");
+  const delSelBtn = h("button", { type: "button", class: "btn danger", onclick: () => deletePoints([...st.sel]), title: "Delete selected points (Del)" }, "Delete selected");
   const toolbar = h("div", { class: "toolbar", role: "toolbar", "aria-label": "Point tools" },
-    mkTool("move", "Move"), mkTool("add", "Add point"), seriesSel, delBtn, undoBtn,
+    mkTool("move", "Move"), mkTool("select", "Box select"), mkTool("add", "Add point"), seriesSel, delBtn, delSelBtn, undoBtn,
     h("span", { class: "spacer" }));
   const status = h("p", { class: "status", "aria-live": "polite" });
   const errSlot = h("div", { "aria-live": "assertive" });
@@ -89,8 +90,10 @@ export async function render(app, { token, num, query }) {
 
   // ----- views
   const isBg = (e, svg) => e.target === svg || e.target.dataset.bg !== undefined;
-  const viewL = new SvgView(svgL, { bounds: [0, 0, pageSize[0], pageSize[1]], isPanTarget: (e) => st.tool !== "add" && isBg(e, svgL) });
-  const viewR = new SvgView(svgR, { bounds: [0, 0, pageSize[0], pageSize[1]], isPanTarget: (e) => st.tool !== "add" && isBg(e, svgR) });
+  // background drag pans, except when adding or box-selecting (Box select tool, or Shift+drag)
+  const boxMode = (e) => st.tool === "select" || (st.tool === "move" && e.shiftKey);
+  const viewL = new SvgView(svgL, { bounds: [0, 0, pageSize[0], pageSize[1]], isPanTarget: (e) => st.tool !== "add" && !boxMode(e) && isBg(e, svgL) });
+  const viewR = new SvgView(svgR, { bounds: [0, 0, pageSize[0], pageSize[1]], isPanTarget: (e) => st.tool !== "add" && !boxMode(e) && isBg(e, svgR) });
   viewL.link(viewR);
   svgEl("rect", { x: -5000, y: -5000, width: 10000, height: 10000, fill: "#fff", "data-bg": "" }, svgL);
   pageImage(svgL, viewL, (z) => api.pageUrl(token, first.page_pdf, z), pageSize);
@@ -223,48 +226,73 @@ export async function render(app, { token, num, query }) {
   function drawSelection() {
     clear(layer.selL); clear(layer.selR);
     const p = panel();
-    const q = st.sel && findPoint(st.sel);
-    if (!p || !q) return;
-    const b = p.blocks[q.block];
-    const pos = st.drag && st.drag.id === q.id ? st.drag.pt : [q.px, q.py];
-    const ex = b.axis_extent?.x || [b.bbox[0], b.bbox[2]], ey = b.axis_extent?.y || [b.bbox[1], b.bbox[3]];
+    if (!p) return;
     const sc = viewL.scale() || 1;
     const info = seriesInfo(p);
-    for (const [g, isR] of [[layer.selL, false], [layer.selR, true]]) {
-      svgEl("line", { class: "crosshair", x1: pos[0], x2: pos[0], y1: Math.min(...ey), y2: Math.max(...ey) }, g);
-      svgEl("line", { class: "crosshair", y1: pos[1], y2: pos[1], x1: Math.min(...ex), x2: Math.max(...ex) }, g);
-      svgEl("circle", { class: "sel-ring", cx: pos[0], cy: pos[1], r: 9 / sc }, g);
-      if (isR && !st.drag) {
-        const fs = 12 / sc;
-        const txt = `${q.series} · ${fmt(q.x_value)}, ${fmt(q.y_value)}${p.y?.unit ? ` ${p.y.unit}` : ""}`;
-        const w = txt.length * fs * 0.56 + 12 / sc;
-        const x = pos[0] + 14 / sc, y = pos[1] - 30 / sc;
-        svgEl("rect", { x, y, width: w, height: 22 / sc, rx: 4 / sc, fill: "#1f2933" }, g);
-        const t = svgEl("text", { x: x + 6 / sc, y: y + 15 / sc, "font-size": fs, fill: "#fff", "font-family": "Inter, system-ui, sans-serif" }, g);
-        t.textContent = txt;
+    const off = st.drag ? st.drag.delta : [0, 0];
+    // rings on every selected point
+    for (const id of st.sel) {
+      const q = findPoint(id);
+      if (!q) continue;
+      const pos = [q.px + off[0], q.py + off[1]];
+      for (const g of [layer.selL, layer.selR]) svgEl("circle", { class: "sel-ring", cx: pos[0], cy: pos[1], r: 9 / sc }, g);
+      if (st.drag) svgEl("circle", { cx: pos[0], cy: pos[1], r: markerR(q, info), fill: "none", stroke: info[q.series]?.color || "#333", "stroke-width": 2, "vector-effect": "non-scaling-stroke" }, layer.selR);
+    }
+    // crosshair + value label on the primary point
+    const q = st.primary && st.sel.has(st.primary) && findPoint(st.primary);
+    if (q) {
+      const b = p.blocks[q.block];
+      const pos = [q.px + off[0], q.py + off[1]];
+      const ex = b.axis_extent?.x || [b.bbox[0], b.bbox[2]], ey = b.axis_extent?.y || [b.bbox[1], b.bbox[3]];
+      for (const [g, isR] of [[layer.selL, false], [layer.selR, true]]) {
+        svgEl("line", { class: "crosshair", x1: pos[0], x2: pos[0], y1: Math.min(...ey), y2: Math.max(...ey) }, g);
+        svgEl("line", { class: "crosshair", y1: pos[1], y2: pos[1], x1: Math.min(...ex), x2: Math.max(...ex) }, g);
+        if (isR && !st.drag && st.sel.size === 1) {
+          const fs = 12 / sc;
+          const txt = `${q.series} · ${fmt(q.x_value)}, ${fmt(q.y_value)}${p.y?.unit ? ` ${p.y.unit}` : ""}`;
+          const w = txt.length * fs * 0.56 + 12 / sc;
+          const x = pos[0] + 14 / sc, y = pos[1] - 30 / sc;
+          svgEl("rect", { x, y, width: w, height: 22 / sc, rx: 4 / sc, fill: "#1f2933" }, g);
+          const t = svgEl("text", { x: x + 6 / sc, y: y + 15 / sc, "font-size": fs, fill: "#fff", "font-family": "Inter, system-ui, sans-serif" }, g);
+          t.textContent = txt;
+        }
       }
     }
-    // keep the dragged marker under the pointer
-    if (st.drag) {
-      svgEl("circle", { cx: pos[0], cy: pos[1], r: markerR(q, info), fill: "none", stroke: info[q.series]?.color || "#333", "stroke-width": 2, "vector-effect": "non-scaling-stroke" }, layer.selR);
+    // selection rectangle while box-selecting
+    if (st.box) {
+      const [x0, y0, x1, y1] = normBox(st.box[0], st.box[1]);
+      for (const g of [layer.selL, layer.selR]) svgEl("rect", { class: "sel-box", x: x0, y: y0, width: x1 - x0, height: y1 - y0 }, g);
     }
   }
 
-  function select(id, { scroll = true, reveal = false } = {}) {
-    st.sel = id;
+  /**
+   * Change the selection. mode: "replace" (default), "toggle" or "add".
+   * `ids` may be a single id, an array, or null (clear).
+   */
+  function select(ids, { mode = "replace", scroll = true, reveal = false } = {}) {
+    const list = ids == null ? [] : Array.isArray(ids) ? ids : [ids];
+    if (mode === "replace") st.sel = new Set(list);
+    else for (const id of list) {
+      if (mode === "toggle" && st.sel.has(id)) st.sel.delete(id);
+      else st.sel.add(id);
+    }
+    const last = list[list.length - 1];
+    st.primary = last && st.sel.has(last) ? last : st.sel.has(st.primary) ? st.primary : [...st.sel].pop() || null;
     drawSelection();
     side.querySelectorAll("tr[data-id]").forEach((tr) => {
-      const on = tr.dataset.id === id;
+      const on = st.sel.has(tr.dataset.id);
       tr.classList.toggle("selected", on);
       tr.setAttribute("aria-selected", String(on));
-      if (on && scroll) tr.scrollIntoView({ block: "nearest" });
+      if (scroll && tr.dataset.id === st.primary) tr.scrollIntoView({ block: "nearest" });
     });
-    if (reveal && id) {
-      const q = findPoint(id);
+    updateTools();
+    if (reveal && st.primary) {
+      const q = findPoint(st.primary);
       const vb = viewL.vb;
       if (q && !inBox([q.px, q.py], [vb.x, vb.y, vb.x + vb.w, vb.y + vb.h])) viewL.setViewBox({ ...vb, x: q.px - vb.w / 2, y: q.py - vb.h / 2 });
     }
   }
+  const multiKey = (e) => e.shiftKey || e.ctrlKey || e.metaKey;
 
   function pointDown(e, q, view) {
     if (e.button !== 0 || e.defaultPrevented) return;
@@ -272,29 +300,49 @@ export async function render(app, { token, num, query }) {
     e.preventDefault();
     e.stopPropagation();
     if (st.tool === "delete") {
-      select(q.id);
-      deletePoint(q.id);
+      deletePoints([q.id]);
       return;
     }
-    select(q.id);
-    dragFrom(e, view, (pt) => {
-      st.drag = { id: q.id, pt };
+    if (multiKey(e)) { select(q.id, { mode: "toggle" }); return; }
+    // clicking a point that is already part of a multi-selection drags the whole group
+    if (!st.sel.has(q.id)) select(q.id);
+    else { st.primary = q.id; drawSelection(); }
+    if (st.tool === "select") return;
+    const ids = [...st.sel];
+    dragFrom(e, view, (pt, s0) => {
+      st.drag = { delta: [pt[0] - s0[0], pt[1] - s0[1]] };
       drawSelection();
     }, (pt, s0, moved) => {
       st.drag = null;
-      if (moved) {
-        const p = panel();
-        sendEdits([{ op: "move", panel: p.id, id: q.id, pt: [round3(pt[0]), round3(pt[1])] }],
-          [{ op: "move", panel: p.id, id: q.id, pt: [q.px, q.py] }], "Move");
-      } else drawSelection();
+      if (!moved) { select(q.id); return; }
+      const p = panel();
+      const d = [pt[0] - s0[0], pt[1] - s0[1]];
+      const pts = ids.map(findPoint).filter(Boolean);
+      sendEdits(pts.map((r) => ({ op: "move", panel: p.id, id: r.id, pt: [round3(r.px + d[0]), round3(r.py + d[1])] })),
+        pts.map((r) => ({ op: "move", panel: p.id, id: r.id, pt: [r.px, r.py] })), pts.length > 1 ? `Move ${pts.length} points` : "Move");
+    });
+  }
+
+  function boxSelect(e, view) {
+    const additive = multiKey(e);
+    dragFrom(e, view, (pt, s0) => {
+      st.box = [s0, pt];
+      drawSelection();
+    }, (pt, s0, moved) => {
+      st.box = null;
+      if (!moved) { if (!additive) select(null); else drawSelection(); return; }
+      const b = normBox(s0, pt);
+      const ids = allPoints(panel()).filter((q) => inBox([q.px, q.py], b)).map((q) => q.id);
+      select(ids, { mode: additive ? "add" : "replace" });
+      status.textContent = `${st.sel.size} point${st.sel.size === 1 ? "" : "s"} selected.`;
     });
   }
 
   for (const [svg, view] of [[svgL, viewL], [svgR, viewR]]) {
     svg.addEventListener("pointerdown", (e) => {
-      if (e.defaultPrevented || e.button !== 0) return;
-      if (st.tool !== "add") return;
-      dragFrom(e, view, null, (pt, s0, moved) => { if (!moved) addPoint(pt); });
+      if (e.defaultPrevented || e.button !== 0 || isSpaceDown()) return;
+      if (st.tool === "add") dragFrom(e, view, null, (pt, s0, moved) => { if (!moved) addPoint(pt); });
+      else if (boxMode(e) && isBg(e, svg)) boxSelect(e, view);
     });
   }
 
@@ -314,11 +362,13 @@ export async function render(app, { token, num, query }) {
     sendEdits([{ op: "add", panel: p.id, block, series, pt: [round3(pt[0]), round3(pt[1])] }], null, "Add");
   }
 
-  function deletePoint(id) {
+  function deletePoints(ids) {
     const p = panel();
-    const q = findPoint(id);
-    if (!q) return;
-    sendEdits([{ op: "delete", panel: p.id, id }], [{ op: "add", panel: p.id, block: q.block, series: q.series, pt: [q.px, q.py], _replaces: id }], "Delete");
+    const pts = ids.map(findPoint).filter(Boolean);
+    if (!pts.length) return;
+    sendEdits(pts.map((q) => ({ op: "delete", panel: p.id, id: q.id })),
+      pts.map((q) => ({ op: "add", panel: p.id, block: q.block, series: q.series, pt: [q.px, q.py], _replaces: q.id })),
+      pts.length > 1 ? `Delete ${pts.length} points` : "Delete");
   }
 
   function showError(msg) {
@@ -348,9 +398,10 @@ export async function render(app, { token, num, query }) {
         if (e.op === "add" && e._replaces && applied[i]) remapId(e._replaces, applied[i].id);
       });
       st.rv = res;
-      const added = applied.find((a) => a.op === "add");
-      if (added) st.sel = added.id;
-      else if (st.sel && !findPoint(st.sel)) st.sel = null;
+      const added = applied.filter((a) => a.op === "add").map((a) => a.id);
+      if (added.length) st.sel = new Set(added);
+      else st.sel = new Set([...st.sel].filter((id) => findPoint(id)));
+      if (!st.sel.has(st.primary)) st.primary = [...st.sel].pop() || null;
       status.textContent = `${label} saved.${res.validation ? "" : wasValidated ? " Validation cleared by the edit." : ""}`;
       wasValidated = !!(res.validation && res.validation.validated);
       renderAll();
@@ -371,7 +422,8 @@ export async function render(app, { token, num, query }) {
       if (op.id === oldId) op.id = newId;
       if (op._replaces === oldId) op._replaces = newId;
     }
-    if (st.sel === oldId) st.sel = newId;
+    if (st.sel.has(oldId)) { st.sel.delete(oldId); st.sel.add(newId); }
+    if (st.primary === oldId) st.primary = newId;
   }
 
   async function undo() {
@@ -389,18 +441,22 @@ export async function render(app, { token, num, query }) {
     st.tool = t;
     document.body.dataset.tool = t;
     for (const [k, b] of Object.entries(toolBtn)) b.setAttribute("aria-pressed", String(k === t));
-    status.textContent = { move: "Move: drag a point (in either view) to its correct position. Click to select.",
-      add: `Add point: click where the missing marker is. Series: ${seriesSel.value || "–"}.`,
-      delete: "Delete: click a point to remove it." }[t];
+    status.textContent = { move: "Move: drag a point (in either view) to its correct position. Shift/Ctrl+click adds to the selection, Shift+drag on empty space selects a box; dragging a selected point moves the whole selection.",
+      select: "Box select: drag a box around points. Shift/Ctrl adds to the selection. Ctrl+A selects all, Del deletes the selection.",
+      add: `Add point: click where a missing marker is (repeat for more). Series: ${seriesSel.value || "–"}.`,
+      delete: "Delete: click a wrong point to remove it." }[t];
   }
   function updateTools() {
     undoBtn.disabled = !st.undo.length || st.busy;
     undoBtn.textContent = st.undo.length ? `Undo (${st.undo.length})` : "Undo";
+    delSelBtn.disabled = !st.sel.size || st.busy;
+    delSelBtn.textContent = st.sel.size ? `Delete selected (${st.sel.size})` : "Delete selected";
   }
 
   const onKey = (e) => {
     if (isTyping(e.target) || document.querySelector("dialog[open]")) return;
-    if ((e.key === "Delete" || e.key === "Backspace") && st.sel) { e.preventDefault(); deletePoint(st.sel); }
+    if ((e.key === "Delete" || e.key === "Backspace") && st.sel.size) { e.preventDefault(); deletePoints([...st.sel]); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a" && panel()) { e.preventDefault(); select(allPoints(panel()).map((q) => q.id), { scroll: false }); }
     else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }
     else if (e.key === "Escape") select(null);
   };
@@ -409,7 +465,7 @@ export async function render(app, { token, num, query }) {
   // ----- panel tabs
   async function showPanel(pid, { fit = true } = {}) {
     st.pid = pid;
-    st.sel = null;
+    st.sel = new Set(); st.primary = null;
     history.replaceState(null, "", routes.review(token, num, pid));
     renderTabs();
     const p = panel();
@@ -477,24 +533,34 @@ export async function render(app, { token, num, query }) {
         e.preventDefault();
         const xv = Number(xi.value.replace("−", "-")), yv = Number(yi.value.replace("−", "-"));
         if (!Number.isFinite(xv) || !Number.isFinite(yv)) { showError("Enter numbers for both values."); return; }
-        select(q.id, { scroll: false });
+        if (!st.sel.has(q.id) || st.sel.size > 1) select(q.id, { scroll: false });
         sendEdits([{ op: "set", panel: p.id, id: q.id, value: [xv, yv] }], [{ op: "move", panel: p.id, id: q.id, pt: [q.px, q.py] }], "Edit value");
       };
       xi.addEventListener("keydown", commit);
       yi.addEventListener("keydown", commit);
-      const focusSel = () => { if (st.sel !== q.id) select(q.id, { scroll: false, reveal: true }); };
+      const focusSel = () => { if (!st.sel.has(q.id)) select(q.id, { scroll: false, reveal: true }); };
       xi.addEventListener("focus", focusSel);
       yi.addEventListener("focus", focusSel);
       const inf = info[q.series] || {};
-      tbody.appendChild(h("tr", { "data-id": q.id, class: q.id === st.sel ? "selected" : "", "aria-selected": String(q.id === st.sel),
-        onclick: (e) => { if (e.target.tagName !== "INPUT") select(q.id, { scroll: false, reveal: true }); } },
+      const on = st.sel.has(q.id);
+      tbody.appendChild(h("tr", { "data-id": q.id, class: on ? "selected" : "", "aria-selected": String(on),
+        onclick: (e) => {
+          if (e.target.tagName === "INPUT") return;
+          // Shift: range from the last selected row; Ctrl/Cmd: toggle one row
+          if (e.shiftKey && st.primary) {
+            const ids = pts.map((r) => r.id);
+            const i0 = ids.indexOf(st.primary), i1 = ids.indexOf(q.id);
+            if (i0 >= 0) { const r = ids.slice(Math.min(i0, i1), Math.max(i0, i1) + 1); if (i1 < i0) r.reverse(); select(r, { mode: "add", scroll: false }); return; }
+          }
+          select(q.id, { mode: e.ctrlKey || e.metaKey ? "toggle" : "replace", scroll: false, reveal: true });
+        } },
         h("td", { title: inf.meaning || "" }, h("span", { class: "series-cell" }, markerIcon(q.shape || inf.shape, q.filled ?? inf.filled, inf.color, 14), q.series,
           q.block !== "main" ? h("span", { class: "muted" }, ` (${q.block.replace("inset:", "inset ")})`) : null)),
         h("td", { class: "num" }, xi), h("td", { class: "num" }, yi),
         h("td", { class: q.edited ? `st-${q.edited}` : weak ? `st-${q.confidence === "gering" ? "weak" : "fair"}` : "st-extracted" }, st_)));
     }
     side.appendChild(h("h2", { style: { fontSize: "17px" } }, `Points (${pts.length})`));
-    side.appendChild(h("p", { class: "small muted" }, "Click a row to select the point. Type a value and press Enter to move it."));
+    side.appendChild(h("p", { class: "small muted" }, "Click a row to select the point; Shift+click selects a range, Ctrl+click adds single rows. Type a value and press Enter to move it."));
     side.appendChild(h("div", { class: "table-wrap" }, h("table", { class: "points" },
       h("caption", { class: "visually-hidden" }, `Points of panel ${p.id}`),
       h("thead", {}, h("tr", {}, h("th", { scope: "col" }, "Series"),
@@ -562,7 +628,7 @@ export async function render(app, { token, num, query }) {
       if (!counts[l] && l === UNASSIGNED) continue;
       legendRow.appendChild(h("span", { title: inf.meaning }, markerIcon(inf.shape, inf.filled, inf.color, 14), `${l} (${counts[l] || 0})`));
     }
-    legendRow.appendChild(h("span", {}, "Selecting a point on either side shows the crosshair on both."));
+    legendRow.appendChild(h("span", {}, "Selecting points on either side highlights them on both. Del removes the selection."));
   }
 
   function renderAll() {
