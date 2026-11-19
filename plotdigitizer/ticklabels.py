@@ -225,13 +225,45 @@ def _isolate(ink: np.ndarray, orient: str, near: str) -> tuple[int, int, int, in
     return r0, r1, c0, c1
 
 
-def _ocr_crop(page, rect, zoom: float, orient: str, near: str):
-    """OCR the label nearest the axis in one page window; returns (text, conf)."""
+def _render(page, rect, zoom: float) -> np.ndarray:
     import pymupdf
 
     pix = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), clip=rect, alpha=False, colorspace=pymupdf.csGRAY)
-    arr = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width)
+    return np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width)
+
+
+def _clipped(box, shape, near: str) -> bool:
+    """True if a label box (taller/wider than a stray pixel row) touches the
+    window edge facing the axis, i.e. the window cut into the glyphs."""
+    r0, r1, c0, c1 = box
+    if near in ("top", "bottom"):
+        return r1 - r0 >= 3 and (r0 == 0 if near == "top" else r1 == shape[0] - 1)
+    return c1 - c0 >= 3 and (c0 == 0 if near == "left" else c1 == shape[1] - 1)
+
+
+def _ocr_crop(page, rect, zoom: float, orient: str, near: str, grow: float = 0.0):
+    """OCR the label nearest the axis in one page window; returns (text, conf).
+
+    Windows start a tick length beyond the axis so outward ticks stay out.
+    With inward ticks the labels can sit closer than that: if the label is
+    cut by the axis-side edge, the window is moved ``grow`` pt toward the
+    axis and read again."""
+    arr = _render(page, rect, zoom)
     box = _isolate(arr < 140, orient, near)
+    if box is not None and grow > 0 and _clipped(box, arr.shape, near):
+        import pymupdf
+
+        r = pymupdf.Rect(rect)
+        if near == "top":
+            r.y0 -= grow
+        elif near == "bottom":
+            r.y1 += grow
+        elif near == "left":
+            r.x0 -= grow
+        else:
+            r.x1 += grow
+        arr = _render(page, r & page.rect, zoom)
+        box = _isolate(arr < 140, orient, near)
     if box is None:
         return "", 0.0
     r0, r1, c0, c1 = box
@@ -352,7 +384,7 @@ def ocr_tokens(page, axes: dict, zoom: float = 6.0, reach: float = 28.0) -> list
                     near = "top" if sgn > 0 else "bottom"
                 else:
                     near = "left" if sgn > 0 else "right"
-                txt, conf = _ocr_crop(page, r, zoom, o, near)
+                txt, conf = _ocr_crop(page, r, zoom, o, near, grow=tl)
                 if parse_number(txt) is None:
                     continue
                 # place the token in the window, centred on the tick

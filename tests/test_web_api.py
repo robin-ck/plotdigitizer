@@ -181,10 +181,27 @@ def test_expiry_and_cleanup(session, tmp_path):
     assert not d.exists()
 
 
+def test_cleanup_spares_session_being_created(tmp_path):
+    """The cleanup loop starts with the app and may run while an upload's
+    folder exists without meta.json yet; it must not delete that folder."""
+    import os
+    import time
+    from plotdigitizer.web.sessions import Store
+    store = Store(tmp_path / "data", 7)
+    fresh, old = store.root / ("A" * 32), store.root / ("B" * 32)
+    fresh.mkdir()
+    old.mkdir()
+    t = time.time() - 2 * 3600
+    os.utime(old, (t, t))
+    store.cleanup()
+    assert fresh.exists() and not old.exists()
+
+
 def test_rate_limit(tmp_path, journal):
     c, _ = make_client(tmp_path, upload_rate=(1, 3600))
     with c:
-        assert upload(c, journal[0]).status_code == 201
+        r = upload(c, journal[0])
+        assert r.status_code == 201, r.text
         assert upload(c, journal[0]).status_code == 429
 
 
